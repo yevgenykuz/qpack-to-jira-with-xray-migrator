@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class ExcelFileHandler {
-    public static final String outputFileName = "TestCase<->TC_Mapping.xlsx";
+    public static final String outputFileName = "TestCase<->Test_Mapping.xlsx";
     private static final Logger logger = Logger.getLogger(ExcelFileHandler.class.getSimpleName());
     private static final String outputFileColumns[] = {"QPACK TC ID", "QPACK TC Link", "JIRA Test ID", "JIRA Test " +
             "link"};
