@@ -25,7 +25,23 @@ In your working folder (your home folder, for example)
 Configure your project
 ----------------------
 
-Rename *"dummy.properties"* to *"configuration.properties"* and fill your QPACK and Jira credentials
+Rename *"dummy.properties"* to *"configuration.properties"* and fill your QPACK and Jira credentials and input .xlsx
+file name
+
+Compile with Maven
+------------------
+
+.. code-block:: bash
+
+    mvn clean install
+
+Move jar to current directory and run it
+----------------------------------------
+
+.. code-block:: bash
+
+    mv target/qpack-to-jira-with-xray-migrator-standalone.jar .
+    java -jar qpack-to-jira-with-xray-migrator-standalone.jar
 
 Features
 ========
@@ -33,7 +49,7 @@ Features
 QPACK *"Test Case"* -> XRAY *"Test"* migration
 ----------------------------------------------
 
-* **.xlsx input** - Export an .xlsx file with keys (IDs) of all your *"Test Cases"* and use it as input for this tool
+* **.xlsx input** - Export an .xlsx file with keys (IDs) of all your *"Test Cases"* and use it as input for this tool. See `example .xlsx file <https://github.com/yevgenykuz//qpack-to-jira-with-xray-migrator/blob/master/TC_List.xlsx>`_
 * **Maintain project structure** - QPACK project structure will be documented into a unique JIRA field to be used later (by addons like *"Structure"*, for example)
 * **Link back to QPACK** - Each XRAY *"Test"* will contain a link to the QPACK *"Test Case"* it was copied from
 

@@ -57,4 +57,31 @@ public class QpackObject {
 
         return null;
     }
+
+    public void addFieldToObjectFields(String fieldName, String fieldValue) {
+        QpackObjectField qpackObjectPathField = new QpackObjectField();
+        qpackObjectPathField.setName(fieldName);
+        qpackObjectPathField.setValue(fieldValue);
+        List<QpackObjectField> updatedObjectFields = this.getFields();
+        updatedObjectFields.add(qpackObjectPathField);
+        this.setFields(updatedObjectFields);
+    }
+
+    public void removeFieldFromObjectFields(String fieldName) {
+        List<QpackObjectField> updatedObjectFields = this.getFields();
+        for (QpackObjectField field : fields) {
+            if (field.getName().equals(fieldName)) {
+                updatedObjectFields.remove(field);
+            }
+        }
+        this.setFields(updatedObjectFields);
+    }
+
+    public void renameField(String oldName, String newName) {
+        String fieldValue = this.getFieldValue(oldName);
+        if (null != fieldValue) {
+            this.removeFieldFromObjectFields(oldName);
+            this.addFieldToObjectFields(newName, fieldValue);
+        }
+    }
 }

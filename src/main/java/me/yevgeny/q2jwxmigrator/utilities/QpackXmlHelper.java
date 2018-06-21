@@ -37,7 +37,8 @@ public class QpackXmlHelper {
         String[] split = str.split(openingPattern, 2);
         String[] secondSplit = split[1].split(closingPattern, 2);
 
-        return split[0] + "<description>" + openingPattern + secondSplit[0] + "</description>" + closingPattern + secondSplit[1];
+        return split[0] + "<description>" + openingPattern + secondSplit[0] + "</description>" + closingPattern +
+                secondSplit[1];
     }
 
     public static String XMLToString(String xml) {

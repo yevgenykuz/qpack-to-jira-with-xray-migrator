@@ -1,4 +1,5 @@
 import me.yevgeny.q2jwxmigrator.model.qpackObject.QpackObject;
+import me.yevgeny.q2jwxmigrator.model.qpackObject.QpackObjectField;
 import me.yevgeny.q2jwxmigrator.model.qpackWebObject.QpackWebObject;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClient;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClientException;
@@ -18,6 +19,11 @@ public class QpackSoapClientTests {
         String objectFieldNameKey = "Name";
         String objectFieldNameValue = "Stage_0: Pre Condition";
         QpackObject qpackObject = QpackSoapClient.getInstance().getQpackObject(id);
+        List<QpackObjectField> objectFields = qpackObject.getFields();
+        System.out.println(String.format(" - Fields for TC-%s:", id));
+        for (QpackObjectField objectField : objectFields) {
+            System.out.println(String.format(" ---> %s: %s", objectField.getName(), objectField.getValue()));
+        }
         assertEquals(qpackObject.getFieldValue(objectFieldNameKey), objectFieldNameValue);
     }
 
@@ -31,7 +37,8 @@ public class QpackSoapClientTests {
         List<QpackWebObject.Steps.Step> stepList = qpackwebObject.getSteps().getStep();
         System.out.println("- Total Steps: " + qpackwebObject.getSteps().getStep().size());
         for (QpackWebObject.Steps.Step step : stepList) {
-            System.out.println(String.format("---> Step %s [ID=%s]:\nDescription:\n%s\nExpected:\n%s", step.getStepno(), step.getID(), step.getDescription(), step.getExpectedresult()));
+            System.out.println(String.format("---> Step %s [ID=%s]:\nDescription:\n%s\nExpected:\n%s", step.getStepno
+                    (), step.getID(), step.getDescription(), step.getExpectedresult()));
         }
 
         assertEquals(qpackwebObject.getPath(), objectFieldPathValue);

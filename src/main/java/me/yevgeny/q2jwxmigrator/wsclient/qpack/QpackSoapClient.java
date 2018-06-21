@@ -57,7 +57,8 @@ public class QpackSoapClient {
 
         try {
             result = httpPost("Get_Object", new BasicNameValuePair("User_Name", ourInstance.qpackUsername),
-                    new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair("ID", Integer.toString(id)));
+                    new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair("ID",
+                            Integer.toString(id)));
         } catch (HttpException e) {
             throw new QpackSoapClientException(e.getMessage());
         }
@@ -73,7 +74,8 @@ public class QpackSoapClient {
             qpackObject = (QpackObject) unmarshaller.unmarshal(new StringReader(result));
             return qpackObject;
         } catch (JAXBException e) {
-            throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s", result));
+            throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s",
+                    result));
         }
     }
 
@@ -82,7 +84,9 @@ public class QpackSoapClient {
 
         try {
             result = httpPost("QPack_Web_RootTree_Item", new BasicNameValuePair("User_Name", ourInstance.qpackUsername),
-                    new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair("ItemId", Integer.toString(id)), new BasicNameValuePair("WebsiteURL", ourInstance.qpackUrl));
+                    new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair
+                            ("ItemId", Integer.toString(id)), new BasicNameValuePair("WebsiteURL", ourInstance
+                            .qpackUrl));
         } catch (HttpException e) {
             throw new QpackSoapClientException(e.getMessage());
         }
@@ -98,7 +102,8 @@ public class QpackSoapClient {
             qpackWebQpackWebObject = (QpackWebObject) unmarshaller.unmarshal(new StringReader(result));
             return qpackWebQpackWebObject;
         } catch (JAXBException e) {
-            throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s", result));
+            throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s",
+                    result));
         }
     }
 
@@ -121,7 +126,8 @@ public class QpackSoapClient {
 
             if (httpResponse.getStatusLine().getStatusCode() != 200) {
                 EntityUtils.consume(httpResponse.getEntity());
-                throw new HttpException(String.format("Got response status code: %s", httpResponse.getStatusLine().getStatusCode()));
+                throw new HttpException(String.format("Got response status code: %s", httpResponse.getStatusLine()
+                        .getStatusCode()));
             } else {
                 response = EntityUtils.toString(httpResponse.getEntity());
                 if (response.contains("<Error>")) {

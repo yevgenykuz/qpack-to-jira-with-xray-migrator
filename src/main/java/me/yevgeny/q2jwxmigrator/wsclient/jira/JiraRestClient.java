@@ -29,6 +29,10 @@ public class JiraRestClient {
         return ourInstance;
     }
 
+    // Create issue of given type with given parameters
+
+    // Upload attachment to given issue
+
     private JiraRestClient() {
     }
 }
