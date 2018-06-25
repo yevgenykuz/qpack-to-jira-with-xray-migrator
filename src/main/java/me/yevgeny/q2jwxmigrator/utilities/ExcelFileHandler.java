@@ -17,17 +17,17 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class ExcelFileHandler {
-    public static final String outputFileName = "TestCase<->Test_Mapping.xlsx";
+    public static final String outputFileName = "TestCase_To_Test_Mapping.xlsx";
     private static final Logger logger = Logger.getLogger(ExcelFileHandler.class.getSimpleName());
     private static final String outputFileColumns[] = {"QPACK TC ID", "QPACK TC Link", "JIRA Test ID", "JIRA Test " +
             "link"};
-    private static ExcelFileHandler ourInstance = new ExcelFileHandler();
-    private static String tcLIstFile;
+    private static ExcelFileHandler ourInstance;
+    private static String tcListFile;
 
     public static ExcelFileHandler getInstance() throws IOException {
         if (null == ourInstance) {
             ourInstance = new ExcelFileHandler();
-            tcLIstFile = ConfigurationManager.getInstance().getConfigurationValue("tcListFile");
+            tcListFile = ConfigurationManager.getInstance().getConfigurationValue("tcListFile");
             ourInstance.createOutputFileIfNeeded();
         }
         return ourInstance;
@@ -36,7 +36,7 @@ public class ExcelFileHandler {
     public List<Integer> getTcListFromInputFile() {
         List<Integer> tcList = new ArrayList<>();
 
-        try (FileInputStream excelFile = new FileInputStream(new File(tcLIstFile))) {
+        try (FileInputStream excelFile = new FileInputStream(new File(tcListFile))) {
             Workbook workbook = new XSSFWorkbook(excelFile);
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> iterator = sheet.iterator();
@@ -58,6 +58,7 @@ public class ExcelFileHandler {
         return tcList;
     }
 
+    //TODO - rewrite to handle empty files too
     public void appendLineToOutputFile(String qpackTestcaseId, String qpackTestcaseLink, String JiraTestId, String
             JiraTestLink) throws IOException {
         try (FileInputStream outputExcelFileInputStream = new FileInputStream(outputFileName)) {
@@ -71,7 +72,7 @@ public class ExcelFileHandler {
             newRow.createCell(4).setCellValue(JiraTestLink);
 
             try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(outputFileName)) {
-                logger.info(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
+                logger.finest(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
                         qpackTestcaseLink,
                         JiraTestId, JiraTestLink));
                 workbook.write(outputExcelFileOutputStream);

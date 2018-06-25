@@ -1,8 +1,9 @@
-package me.yevgeny.q2jwxmigrator.model.qpackObject;
+package me.yevgeny.q2jwxmigrator.model.qpackobject;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Iterator;
 import java.util.List;
 
 @XmlRootElement(name = "object")
@@ -69,11 +70,13 @@ public class QpackObject {
 
     public void removeFieldFromObjectFields(String fieldName) {
         List<QpackObjectField> updatedObjectFields = this.getFields();
-        for (QpackObjectField field : fields) {
-            if (field.getName().equals(fieldName)) {
-                updatedObjectFields.remove(field);
+        for (Iterator<QpackObjectField> iterator = updatedObjectFields.iterator(); iterator.hasNext(); ) {
+            QpackObjectField value = iterator.next();
+            if (value.getName().equals(fieldName)) {
+                iterator.remove();
             }
         }
+
         this.setFields(updatedObjectFields);
     }
 

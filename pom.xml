@@ -67,21 +67,42 @@
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
+                <!-- resolving conflict with net.rcarz.jira-client -->
+                <exclusion>
+                    <groupId>com.atlassian.mail</groupId>
+                    <artifactId>atlassian-mail</artifactId>
+                </exclusion>
+                <!-- resolving conflict with net.rcarz.jira-client -->
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
-        <!-- Jira rest client -->
+        <!-- For jira-client by rcarz - https://github.com/rcarz/jira-client-->
         <dependency>
-            <groupId>com.atlassian.jira</groupId>
-            <artifactId>jira-rest-java-client-parent</artifactId>
-            <version>5.0.4</version>
-            <type>pom</type>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.5</version>
         </dependency>
-        <!-- Testing -->
+        <!-- For jira-client by rcarz - https://github.com/rcarz/jira-client-->
         <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-console-standalone</artifactId>
-            <version>1.2.0</version>
-            <scope>test</scope>
+            <groupId>net.sf.json-lib</groupId>
+            <artifactId>json-lib</artifactId>
+            <version>2.4</version>
+            <classifier>jdk15</classifier>
+        </dependency>
+        <!-- For jira-client by rcarz - https://github.com/rcarz/jira-client-->
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.3</version>
+        </dependency>
+        <!-- JSON processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.9.6</version>
         </dependency>
         <!-- Used to connect to QPACK -->
         <dependency>
@@ -101,12 +122,24 @@
             <artifactId>commons-io</artifactId>
             <version>2.6</version>
         </dependency>
-
+        <!-- progress status - https://github.com/ctongfei/progressbar -->
+        <dependency>
+            <groupId>me.tongfei</groupId>
+            <artifactId>progressbar</artifactId>
+            <version>0.7.0</version>
+        </dependency>
         <!-- https://stackoverflow.com/questions/20473689/org-xml-sax-saxnotrecognizedexception-feature-http-javax-xml-xmlconstants-fe-->
         <dependency>
             <groupId>xerces</groupId>
             <artifactId>xercesImpl</artifactId>
             <version>2.11.0</version>
+        </dependency>
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-console-standalone</artifactId>
+            <version>1.2.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

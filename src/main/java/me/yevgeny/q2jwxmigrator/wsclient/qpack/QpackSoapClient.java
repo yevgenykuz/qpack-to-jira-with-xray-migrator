@@ -1,7 +1,7 @@
 package me.yevgeny.q2jwxmigrator.wsclient.qpack;
 
-import me.yevgeny.q2jwxmigrator.model.qpackObject.QpackObject;
-import me.yevgeny.q2jwxmigrator.model.qpackWebObject.QpackWebObject;
+import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObject;
+import me.yevgeny.q2jwxmigrator.model.qpackwebobject.QpackWebObject;
 import me.yevgeny.q2jwxmigrator.utilities.ConfigurationManager;
 import me.yevgeny.q2jwxmigrator.utilities.QpackXmlHelper;
 import org.apache.http.HttpException;
@@ -118,7 +118,8 @@ public class QpackSoapClient {
         String response;
 
         HttpPost httpPostUrl = new HttpPost(ourInstance.qpackUrl + QPACK_API_PATH + method);
-        logger.info(String.format("Sending HTTP Post to: %s with: %s", httpPostUrl.getURI(), Arrays.toString(params)));
+        logger.finest(String.format("Sending HTTP Post to: %s with: %s", httpPostUrl.getURI(), Arrays.toString
+                (params)));
 
         try {
             httpPostUrl.setEntity(new UrlEncodedFormEntity(Arrays.asList(params), "UTF-8"));

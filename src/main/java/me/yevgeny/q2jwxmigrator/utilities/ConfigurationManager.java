@@ -8,7 +8,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 public class ConfigurationManager {
-    private final static String propertiesFileName = "/configuration.properties";
+    private static final String propertiesFileName = "/configuration.properties";
     private static final Logger logger = Logger.getLogger(ConfigurationManager.class.getSimpleName());
     private static ConfigurationManager ourInstance;
     private Properties properties;
@@ -26,10 +26,10 @@ public class ConfigurationManager {
     public String getConfigurationValue(String key) throws NoSuchElementException {
         String value = ourInstance.properties.getProperty(key);
         if (null == value) {
-            throw new NoSuchElementException(String.format("Couldn't find \"%s\" in \"%s\"", key,propertiesFileName));
+            throw new NoSuchElementException(String.format("Couldn't find \"%s\" in \"%s\"", key, propertiesFileName));
         }
 
-        logger.info(String.format("Current value for \"%s\" is: \"%s\"", key, value));
+        logger.fine(String.format("Current value for \"%s\" is: \"%s\"", key, value));
         return value;
     }
 

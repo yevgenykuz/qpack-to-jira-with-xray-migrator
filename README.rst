@@ -25,7 +25,7 @@ In your working folder (your home folder, for example)
 Configure your project
 ----------------------
 
-Rename *"dummy.properties"* to *"configuration.properties"* and fill your QPACK and Jira credentials and input .xlsx
+Rename *"dummy.properties"* to *"configuration.properties"* and fill your QPACK and Jira parameters and input .xlsx
 file name
 
 Compile with Maven

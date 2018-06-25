@@ -7,7 +7,7 @@
 //
 
 
-package me.yevgeny.q2jwxmigrator.model.qpackWebObject;
+package me.yevgeny.q2jwxmigrator.model.qpackwebobject;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

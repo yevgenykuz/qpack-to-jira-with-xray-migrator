@@ -1,17 +1,34 @@
 package me.yevgeny.q2jwxmigrator.wsclient.jira;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import me.yevgeny.q2jwxmigrator.model.jirafield.JiraField;
+import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObjectField;
 import me.yevgeny.q2jwxmigrator.utilities.ConfigurationManager;
+import me.yevgeny.q2jwxmigrator.utilities.JiraFieldKey;
+import net.rcarz.jiraclient.BasicCredentials;
+import net.rcarz.jiraclient.Component;
+import net.rcarz.jiraclient.Field;
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.JiraClient;
+import net.rcarz.jiraclient.JiraException;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
 
-import java.io.FileNotFoundException;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class JiraRestClient {
     private static final Logger logger = Logger.getLogger(JiraRestClient.class.getSimpleName());
     private static JiraRestClient ourInstance;
 
+    private JiraClient client;
     private String jiraUrl;
     private String jiraUsername;
     private String jiraPassword;
+    private String jiraProjectKey;
+    private List<JiraField> jiraFieldMapping;
 
 
     public static JiraRestClient getInstance() throws JiraRestClientException {
@@ -21,7 +38,11 @@ public class JiraRestClient {
                 ourInstance.jiraUrl = ConfigurationManager.getInstance().getConfigurationValue("jiraUrl");
                 ourInstance.jiraUsername = ConfigurationManager.getInstance().getConfigurationValue("jiraUsername");
                 ourInstance.jiraPassword = ConfigurationManager.getInstance().getConfigurationValue("jiraPassword");
-            } catch (FileNotFoundException e) {
+                BasicCredentials credentials = new BasicCredentials(ourInstance.jiraUsername, ourInstance.jiraPassword);
+                ourInstance.client = new JiraClient(ourInstance.jiraUrl, credentials);
+                ourInstance.jiraProjectKey = ConfigurationManager.getInstance().getConfigurationValue("jiraProjectKey");
+                ourInstance.jiraFieldMapping = ourInstance.getJiraFields();
+            } catch (Exception e) {
                 throw new JiraRestClientException(e.getMessage());
             }
         }
@@ -29,9 +50,102 @@ public class JiraRestClient {
         return ourInstance;
     }
 
-    // Create issue of given type with given parameters
+    public Issue getIssue(String issueKey) throws JiraRestClientException {
+        try {
+            return client.getIssue(issueKey);
+        } catch (JiraException e) {
+            throw new JiraRestClientException(e.getMessage());
+        }
+    }
+
+    public String createIssue(List<QpackObjectField> fields, String issueType) throws JiraRestClientException {
+        try {
+            Issue.FluentCreate issue = client.createIssue(jiraProjectKey, issueType);
+            List<JiraField> jiraFieldMapping = getJiraFieldMapping();
+            for (QpackObjectField field : fields) {
+                boolean foundField = false;
+                for (JiraField jiraField : jiraFieldMapping) {
+                    if (jiraField.getName().equals(field.getName())) {
+                        foundField = true;
+                        // these fields require special values:
+                        if (field.getName().equals(JiraFieldKey.COMPONENT.value())) {
+                            List<Component> testComponents = client.getComponentsAllowedValues(jiraProjectKey, "Test");
+                            boolean foundComponent = false;
+                            for (Component testComponent : testComponents) {
+                                if (testComponent.getName().equals(field.getValue())) {
+                                    issue.field(Field.COMPONENTS, new ArrayList() {{
+                                        add(testComponent);
+                                    }});
+                                    foundComponent = true;
+                                    break;
+                                }
+                            }
+                            if (!foundComponent) {
+                                throw new JiraRestClientException(String.format("Couldn't find component: %s", field
+                                        .getValue()));
+                            }
+
+                        } else {
+                            issue.field(jiraField.getId(), field.getValue());
+                        }
+                        break;
+                    }
+                }
+                if (!foundField) {
+                    logger.warning(String.format("QPACK \"%s\" field was not found in JIRA, skipping to next field",
+                            field
+                                    .getName()));
+                }
+            }
+
+            Issue createdIssue = issue.execute();
+            return createdIssue.getKey();
+        } catch (JiraException e) {
+            e.printStackTrace();
+            throw new JiraRestClientException(e.getMessage());
+        }
+    }
+
+    public void uploadAttachmentsToIssue(List<String> attachmentsToUpload, String issueKey) throws
+            JiraRestClientException {
+        try {
+            Issue issue = client.getIssue(issueKey);
+            for (String attachment : attachmentsToUpload) {
+                issue.addAttachment(new File(attachment));
+            }
+        } catch (JiraException e) {
+            throw new JiraRestClientException(e.getMessage());
+        }
+    }
+
 
     // Upload attachment to given issue
+
+    public List<JiraField> getJiraFieldMapping() {
+        return jiraFieldMapping;
+    }
+
+    private List<JiraField> getJiraFields() throws JiraRestClientException {
+        try {
+
+            JSON fieldsAsJson = client.getRestClient().get("/rest/api/2/field");
+            if (!fieldsAsJson.isArray()) {
+                throw new JiraRestClientException("Couldn't get JIRA fields");
+            }
+
+            JSONArray fieldsArray = JSONArray.fromObject(fieldsAsJson);
+            List<JiraField> fields = new ArrayList<>(fieldsArray.size());
+            final ObjectMapper mapper = new ObjectMapper();
+
+            for (int i = 0; i < fieldsArray.size(); i++) {
+                fields.add(mapper.readValue(fieldsArray.getJSONObject(i).toString(), JiraField.class));
+            }
+
+            return fields;
+        } catch (Exception e) {
+            throw new JiraRestClientException(e.getMessage());
+        }
+    }
 
     private JiraRestClient() {
     }

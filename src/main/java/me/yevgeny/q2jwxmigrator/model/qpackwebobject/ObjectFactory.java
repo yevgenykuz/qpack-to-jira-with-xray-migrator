@@ -7,7 +7,7 @@
 //
 
 
-package me.yevgeny.q2jwxmigrator.model.qpackWebObject;
+package me.yevgeny.q2jwxmigrator.model.qpackwebobject;
 
 import javax.xml.bind.annotation.XmlRegistry;
 
@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.XmlRegistry;
 /**
  * This object contains factory methods for each
  * Java content interface and Java element interface
- * generated in the me.yevgeny.q2jwxmigrator.model.qpackWebObject package.
+ * generated in the me.yevgeny.q2jwxmigrator.model.qpackwebobject package.
  * <p>An ObjectFactory allows you to programatically
  * construct new instances of the Java representation
  * for XML content. The Java representation of XML
@@ -31,7 +31,7 @@ public class ObjectFactory {
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: me
-     * .yevgeny.q2jwxmigrator.model.qpackWebObject
+     * .yevgeny.q2jwxmigrator.model.qpackwebobject
      */
     public ObjectFactory() {
     }

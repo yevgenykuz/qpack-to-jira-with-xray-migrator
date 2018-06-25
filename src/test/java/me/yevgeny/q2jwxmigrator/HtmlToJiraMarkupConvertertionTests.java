@@ -1,5 +1,7 @@
+package me.yevgeny.q2jwxmigrator;
+
 import com.atlassian.renderer.wysiwyg.converter.DefaultWysiwygConverter;
-import me.yevgeny.q2jwxmigrator.model.qpackObject.QpackObject;
+import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObject;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClient;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClientException;
 import org.junit.jupiter.api.DisplayName;

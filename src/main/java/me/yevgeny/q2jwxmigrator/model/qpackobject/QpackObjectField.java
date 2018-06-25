@@ -1,4 +1,4 @@
-package me.yevgeny.q2jwxmigrator.model.qpackObject;
+package me.yevgeny.q2jwxmigrator.model.qpackobject;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlValue;
