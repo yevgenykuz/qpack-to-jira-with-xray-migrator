@@ -48,10 +48,13 @@ public class QpackToJiraWithXrayMigrator {
         String qpackUrl = configurationManagerInstance.getConfigurationValue("qpackUrl");
         String jiraUrl = configurationManagerInstance.getConfigurationValue("jiraUrl");
 
+        boolean validateFields = true;
+
         List<Integer> testCaseIds = excelFileHandlerInstance.getTcListFromInputFile();
         int totalTestCases = testCaseIds.size();
         logger.info(String.format("%s QPACK Test Cases will be migrated", totalTestCases));
-//        for (Integer testCaseId : ProgressBar.wrap(testCaseIds, "Migration")) {
+
+        //        for (Integer testCaseId : ProgressBar.wrap(testCaseIds, "Migration")) {
         for (Integer testCaseId : testCaseIds) {
 
             logger.fine(String.format("Fetching TC-%s from QPACK", testCaseId));
@@ -145,6 +148,12 @@ public class QpackToJiraWithXrayMigrator {
             qpackObject.renameField(QpackFieldKey.NAME.value(), JiraFieldKey.SUMMARY.value());
             qpackObject.renameField(QpackFieldKey.CATEGORY.value(), JiraFieldKey.TEST_CATEGORY.value());
             qpackObject.renameField(QpackFieldKey.TEST_TYPE.value(), JiraFieldKey.TEST_CLASSIFICATION.value());
+
+            // validate fields - happens only once:
+            if (validateFields) {
+                jiraRestClientInstance.validateFields(qpackObject.getFields());
+                validateFields = false;
+            }
 
             // create issue (of type test) in JIRA
             String jiraIssueKey = jiraRestClientInstance.createIssue(qpackObject.getFields(), jiraTestIssueType);

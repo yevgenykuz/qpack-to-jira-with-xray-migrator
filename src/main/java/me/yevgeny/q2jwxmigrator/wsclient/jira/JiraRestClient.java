@@ -7,7 +7,6 @@ import me.yevgeny.q2jwxmigrator.utilities.ConfigurationManager;
 import me.yevgeny.q2jwxmigrator.utilities.JiraFieldKey;
 import net.rcarz.jiraclient.BasicCredentials;
 import net.rcarz.jiraclient.Component;
-import net.rcarz.jiraclient.Field;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
@@ -62,18 +61,17 @@ public class JiraRestClient {
         try {
             Issue.FluentCreate issue = client.createIssue(jiraProjectKey, issueType);
             List<JiraField> jiraFieldMapping = getJiraFieldMapping();
-            for (QpackObjectField field : fields) {
-                boolean foundField = false;
+            for (QpackObjectField qpackField : fields) {
                 for (JiraField jiraField : jiraFieldMapping) {
-                    if (jiraField.getName().equals(field.getName())) {
-                        foundField = true;
+                    if (jiraField.getName().equals(qpackField.getName())) {
                         // these fields require special values:
-                        if (field.getName().equals(JiraFieldKey.COMPONENT.value())) {
-                            List<Component> testComponents = client.getComponentsAllowedValues(jiraProjectKey, "Test");
+                        if (qpackField.getName().equals(JiraFieldKey.COMPONENT.value())) {
+                            List<Component> testComponents = client.getComponentsAllowedValues(jiraProjectKey,
+                                    issueType);
                             boolean foundComponent = false;
                             for (Component testComponent : testComponents) {
-                                if (testComponent.getName().equals(field.getValue())) {
-                                    issue.field(Field.COMPONENTS, new ArrayList() {{
+                                if (testComponent.getName().equals(qpackField.getValue())) {
+                                    issue.field(jiraField.getId(), new ArrayList() {{
                                         add(testComponent);
                                     }});
                                     foundComponent = true;
@@ -81,20 +79,15 @@ public class JiraRestClient {
                                 }
                             }
                             if (!foundComponent) {
-                                throw new JiraRestClientException(String.format("Couldn't find component: %s", field
-                                        .getValue()));
+                                throw new JiraRestClientException(String.format("Couldn't find component: %s",
+                                        qpackField.getValue()));
                             }
-
                         } else {
-                            issue.field(jiraField.getId(), field.getValue());
+                            // these fields accept string value:
+                            issue.field(jiraField.getId(), qpackField.getValue());
                         }
                         break;
                     }
-                }
-                if (!foundField) {
-                    logger.warning(String.format("QPACK \"%s\" field was not found in JIRA, skipping to next field",
-                            field
-                                    .getName()));
                 }
             }
 
@@ -102,7 +95,8 @@ public class JiraRestClient {
             return createdIssue.getKey();
         } catch (JiraException e) {
             e.printStackTrace();
-            throw new JiraRestClientException(e.getMessage());
+            throw new JiraRestClientException(e.getMessage() + ". Make sure all fields are assigned to relevant " +
+                    "screens");
         }
     }
 
@@ -118,8 +112,21 @@ public class JiraRestClient {
         }
     }
 
-
-    // Upload attachment to given issue
+    public void validateFields(List<QpackObjectField> fields) {
+        List<JiraField> jiraFieldMapping = getJiraFieldMapping();
+        for (QpackObjectField field : fields) {
+            boolean foundField = false;
+            for (JiraField jiraField : jiraFieldMapping) {
+                if (jiraField.getName().equals(field.getName())) {
+                    foundField = true;
+                    break;
+                }
+            }
+            if (!foundField) {
+                logger.warning(String.format("QPACK \"%s\" field was not found in JIRA", field.getName()));
+            }
+        }
+    }
 
     public List<JiraField> getJiraFieldMapping() {
         return jiraFieldMapping;

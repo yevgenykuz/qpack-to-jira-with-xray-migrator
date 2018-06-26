@@ -3,6 +3,7 @@ QPACK to JIRA with XRAY Migrator
 
 Use to migrate from Orcanos *QPACK* to *JIRA* with the *XRAY* addon.
 
+-----
 
 
 .. contents::
@@ -70,5 +71,6 @@ License
 -------
 
 BSD-3-Clause - `LICENSE <https://github.com/yevgenykuz//qpack-to-jira-with-xray-migrator/blob/master/LICENSE>`_
+
 
 -----

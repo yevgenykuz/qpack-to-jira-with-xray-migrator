@@ -58,7 +58,6 @@ public class ExcelFileHandler {
         return tcList;
     }
 
-    //TODO - rewrite to handle empty files too
     public void appendLineToOutputFile(String qpackTestcaseId, String qpackTestcaseLink, String JiraTestId, String
             JiraTestLink) throws IOException {
         try (FileInputStream outputExcelFileInputStream = new FileInputStream(outputFileName)) {
@@ -66,10 +65,10 @@ public class ExcelFileHandler {
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
             Row newRow = sheet.createRow(++lastRowNum);
-            newRow.createCell(1).setCellValue(qpackTestcaseId);
-            newRow.createCell(2).setCellValue(qpackTestcaseLink);
-            newRow.createCell(3).setCellValue(JiraTestId);
-            newRow.createCell(4).setCellValue(JiraTestLink);
+            newRow.createCell(0).setCellValue(qpackTestcaseId);
+            newRow.createCell(1).setCellValue(qpackTestcaseLink);
+            newRow.createCell(2).setCellValue(JiraTestId);
+            newRow.createCell(3).setCellValue(JiraTestLink);
 
             try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(outputFileName)) {
                 logger.finest(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
@@ -90,8 +89,19 @@ public class ExcelFileHandler {
         if (!outputFile.exists()) {
             outputFile.createNewFile();
             logger.info(String.format("Creating new output file: %s", outputFileName));
-            appendLineToOutputFile(outputFileColumns[0], outputFileColumns[1], outputFileColumns[2],
-                    outputFileColumns[3]);
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Migration Table");
+            Row row = sheet.createRow(0);
+            row.createCell(0).setCellValue(outputFileColumns[0]);
+            row.createCell(1).setCellValue(outputFileColumns[1]);
+            row.createCell(2).setCellValue(outputFileColumns[2]);
+            row.createCell(3).setCellValue(outputFileColumns[3]);
+            try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(outputFileName)) {
+                workbook.write(outputExcelFileOutputStream);
+                workbook.close();
+            } catch (IOException e) {
+                throw e;
+            }
         } else {
             logger.info(String.format("Output file exists already, data will be appended"));
         }
