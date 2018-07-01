@@ -32,7 +32,7 @@ public class QpackXmlHelper {
     }
 
     public static String surroundQpackWebObjectDescriptionWithTags(String str) {
-        String openingPattern = "&lt;p";
+        String openingPattern = "&lt;[pP]";
         String closingPattern = "<steps>";
         String[] split = str.split(openingPattern, 2);
         String[] secondSplit = split[1].split(closingPattern, 2);

@@ -13,6 +13,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.apache.log4j.Logger;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -23,7 +24,6 @@ import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 public class QpackSoapClient {
     private static final String QPACK_API_PATH = "/QPack/QPackServ/QPackServ.asmx/";
@@ -118,7 +118,7 @@ public class QpackSoapClient {
         String response;
 
         HttpPost httpPostUrl = new HttpPost(ourInstance.qpackUrl + QPACK_API_PATH + method);
-        logger.finest(String.format("Sending HTTP Post to: %s with: %s", httpPostUrl.getURI(), Arrays.toString
+        logger.debug(String.format("Sending HTTP Post to: %s with: %s", httpPostUrl.getURI(), Arrays.toString
                 (params)));
 
         try {

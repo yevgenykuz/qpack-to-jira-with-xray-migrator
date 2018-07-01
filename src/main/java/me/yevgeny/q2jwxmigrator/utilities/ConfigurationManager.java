@@ -1,11 +1,13 @@
 package me.yevgeny.q2jwxmigrator.utilities;
 
+import org.apache.log4j.Logger;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.NoSuchElementException;
 import java.util.Properties;
-import java.util.logging.Logger;
+
 
 public class ConfigurationManager {
     private static final String propertiesFileName = "/configuration.properties";
@@ -29,7 +31,7 @@ public class ConfigurationManager {
             throw new NoSuchElementException(String.format("Couldn't find \"%s\" in \"%s\"", key, propertiesFileName));
         }
 
-        logger.fine(String.format("Current value for \"%s\" is: \"%s\"", key, value));
+        logger.debug(String.format("Current value for \"%s\" is: \"%s\"", key, value));
         return value;
     }
 

@@ -6,7 +6,10 @@ public enum QpackFieldKey {
     CATEGORY("Category"),
     TEST_TYPE("Test Type"),
     DESCRIPTION("Description"),
-    ACTUAL_VERSION("Actual Version");
+    ACTUAL_VERSION("Actual Version"),
+    DUE_DATE("Due Date"),
+    STATUS("Status"),
+    PRIORITY("Priority");
 
     private final String value;
 

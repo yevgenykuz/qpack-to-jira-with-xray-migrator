@@ -1,5 +1,6 @@
 package me.yevgeny.q2jwxmigrator.utilities;
 
+import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -12,9 +13,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class ExcelFileHandler {
     public static final String outputFileName = "TestCase_To_Test_Mapping.xlsx";
@@ -33,16 +32,14 @@ public class ExcelFileHandler {
         return ourInstance;
     }
 
-    public List<Integer> getTcListFromInputFile() {
+    public List<Integer> getTcListFromInputFile() throws IOException {
         List<Integer> tcList = new ArrayList<>();
 
         try (FileInputStream excelFile = new FileInputStream(new File(tcListFile))) {
             Workbook workbook = new XSSFWorkbook(excelFile);
             Sheet sheet = workbook.getSheetAt(0);
-            Iterator<Row> iterator = sheet.iterator();
 
-            while (iterator.hasNext()) {
-                Row currentRow = iterator.next();
+            for (Row currentRow : sheet) {
                 Cell currentCell = currentRow.getCell(currentRow.getFirstCellNum());
                 if (currentCell.getCellTypeEnum() == CellType.STRING) {
                     if (currentCell.getStringCellValue().contains("TC-")) {
@@ -52,7 +49,8 @@ public class ExcelFileHandler {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Failed to read from file", e);
+            throw e;
         }
 
         return tcList;
@@ -71,23 +69,24 @@ public class ExcelFileHandler {
             newRow.createCell(3).setCellValue(JiraTestLink);
 
             try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(outputFileName)) {
-                logger.finest(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
+                logger.debug(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
                         qpackTestcaseLink,
                         JiraTestId, JiraTestLink));
                 workbook.write(outputExcelFileOutputStream);
                 workbook.close();
             } catch (IOException e) {
+                logger.error("Failed to write to file", e);
                 throw e;
             }
         } catch (IOException e) {
+            logger.error("Failed to write to file", e);
             throw e;
         }
     }
 
     private void createOutputFileIfNeeded() throws IOException {
         File outputFile = new File(outputFileName);
-        if (!outputFile.exists()) {
-            outputFile.createNewFile();
+        if (outputFile.createNewFile()) {
             logger.info(String.format("Creating new output file: %s", outputFileName));
             Workbook workbook = new XSSFWorkbook();
             Sheet sheet = workbook.createSheet("Migration Table");
@@ -100,10 +99,11 @@ public class ExcelFileHandler {
                 workbook.write(outputExcelFileOutputStream);
                 workbook.close();
             } catch (IOException e) {
+                logger.error("Failed to write to file", e);
                 throw e;
             }
         } else {
-            logger.info(String.format("Output file exists already, data will be appended"));
+            logger.info("Output file already exists, data will be appended");
         }
     }
 
