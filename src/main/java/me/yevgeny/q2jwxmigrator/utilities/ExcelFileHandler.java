@@ -17,6 +17,7 @@ import java.util.List;
 
 public class ExcelFileHandler {
     public static final String outputFileName = "TestCase_To_Test_Mapping.xlsx";
+    public static final String failedTcListFileName = "Failed_To_Convert_TC_List.xlsx";
     private static final Logger logger = Logger.getLogger(ExcelFileHandler.class.getSimpleName());
     private static final String outputFileColumns[] = {"QPACK TC ID", "QPACK TC Link", "JIRA Test ID", "JIRA Test " +
             "link"};
@@ -68,18 +69,42 @@ public class ExcelFileHandler {
             newRow.createCell(2).setCellValue(JiraTestId);
             newRow.createCell(3).setCellValue(JiraTestLink);
 
-            try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(outputFileName)) {
-                logger.debug(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
-                        qpackTestcaseLink,
-                        JiraTestId, JiraTestLink));
-                workbook.write(outputExcelFileOutputStream);
-                workbook.close();
-            } catch (IOException e) {
-                logger.error("Failed to write to file", e);
-                throw e;
-            }
+            logger.debug(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
+                    qpackTestcaseLink, JiraTestId, JiraTestLink));
+            writeWorkbookToFile(workbook, outputFileName);
         } catch (IOException e) {
-            logger.error("Failed to write to file", e);
+            logger.error("Failed to open file", e);
+            throw e;
+        }
+    }
+
+    public void createFailedTcListFileIfNeeded(List<String> failedTcIds) throws IOException {
+        File outputFile = new File(failedTcListFileName);
+        if (outputFile.createNewFile()) {
+            logger.info(String.format("Creating new output file: %s", failedTcListFileName));
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Failed TC List");
+            Row row = sheet.createRow(0);
+            row.createCell(0).setCellValue("Failed to convert the following test cases:");
+            writeWorkbookToFile(workbook, failedTcListFileName);
+        } else {
+            logger.info("Failed TC list file already exists, data will be appended");
+        }
+
+        try (FileInputStream outputExcelFileInputStream = new FileInputStream(failedTcListFileName)) {
+            Workbook workbook = new XSSFWorkbook(outputExcelFileInputStream);
+            Sheet sheet = workbook.getSheetAt(0);
+            int lastRowNum = sheet.getLastRowNum();
+
+            for (int i = 0; i < failedTcIds.size(); i++) {
+                Row newRow = sheet.createRow(++lastRowNum);
+                newRow.createCell(0).setCellValue(failedTcIds.get(i));
+            }
+
+            logger.debug("Writing failed TC list to file");
+            writeWorkbookToFile(workbook, failedTcListFileName);
+        } catch (IOException e) {
+            logger.error("Failed to open file", e);
             throw e;
         }
     }
@@ -95,15 +120,19 @@ public class ExcelFileHandler {
             row.createCell(1).setCellValue(outputFileColumns[1]);
             row.createCell(2).setCellValue(outputFileColumns[2]);
             row.createCell(3).setCellValue(outputFileColumns[3]);
-            try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(outputFileName)) {
-                workbook.write(outputExcelFileOutputStream);
-                workbook.close();
-            } catch (IOException e) {
-                logger.error("Failed to write to file", e);
-                throw e;
-            }
+            writeWorkbookToFile(workbook, outputFileName);
         } else {
             logger.info("Output file already exists, data will be appended");
+        }
+    }
+
+    private void writeWorkbookToFile(Workbook workbook, String fileName) throws IOException {
+        try (FileOutputStream outputExcelFileOutputStream = new FileOutputStream(fileName)) {
+            workbook.write(outputExcelFileOutputStream);
+            workbook.close();
+        } catch (IOException e) {
+            logger.error("Failed to write to file", e);
+            throw e;
         }
     }
 

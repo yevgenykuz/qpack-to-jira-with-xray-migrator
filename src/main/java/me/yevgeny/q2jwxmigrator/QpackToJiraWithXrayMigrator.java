@@ -1,9 +1,6 @@
 package me.yevgeny.q2jwxmigrator;
 
 import com.atlassian.renderer.wysiwyg.converter.DefaultWysiwygConverter;
-import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarBuilder;
-import me.tongfei.progressbar.ProgressBarStyle;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.Step;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.XrayTestStepList;
 import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObject;
@@ -26,7 +23,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,11 +47,11 @@ public class QpackToJiraWithXrayMigrator {
     private static String qpackUrl;
     private static String jiraUrl;
 
-    private static StringJoiner failedTestCases = new StringJoiner(" ");
+    private static int statusInterval;
+    private static List<String> failedTestCases = new ArrayList<>();
 
 
-    public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException,
-            InterruptedException {
+    public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException {
         logger.info("Starting migration...");
 
         ConfigurationManager configurationManagerInstance = ConfigurationManager.getInstance();
@@ -75,29 +71,33 @@ public class QpackToJiraWithXrayMigrator {
         }
 
         logger.info(String.format("%s QPACK Test Cases will be migrated", totalTestCases));
-        failedTestCases.add("Failed to convert the following test cases:\n");
+        statusInterval = (int) (totalTestCases * (1.0f / 100.0f));
+        statusInterval = (statusInterval == 0) ? 1 : statusInterval;
 
-        // try converting the first TC - user can abort if fields are missing in JIRA
-        convertTestCaseToTest(true, testCaseIds.get(0));
+        try {
+            // try converting the first TC - user can abort if fields are missing in JIRA
+            convertTestCaseToTest(true, testCaseIds.get(0));
 
-        ProgressBarBuilder pbb = new ProgressBarBuilder()
-                .setInitialMax(totalTestCases)
-                .setTaskName("Migration")
-                .setStyle(ProgressBarStyle.ASCII)
-                .setUpdateIntervalMillis(oneSecond);
-
-        // convert all other TC
-        for (Integer testCaseId : ProgressBar.wrap(testCaseIds.subList(1, totalTestCases), pbb)) {
-            convertTestCaseToTest(false, testCaseId);
+            // convert all other TC
+            for (int i = 1; i < testCaseIds.size(); i++) {
+                convertTestCaseToTest(false, testCaseIds.get(i));
+                printStatus(i, totalTestCases);
+            }
+            Thread.sleep(oneSecond);
+            logger.info(String.format("Migration complete. Check %s for migration table", ExcelFileHandler
+                    .outputFileName));
+        } catch (InterruptedException e) {
+            logger.error("Migration interrupted !", e);
+        } finally {
+            if (!failedTestCases.isEmpty()) {
+                logger.info(String.format("Failed to convert some test cases. Check \"%s\" output file",
+                        ExcelFileHandler.failedTcListFileName));
+                excelFileHandlerInstance.createFailedTcListFileIfNeeded(failedTestCases);
+            }
         }
-
-        Thread.sleep(oneSecond);
-        logger.info(String.format("Migration complete. Check %s for migration table", ExcelFileHandler.outputFileName));
-        logger.info(failedTestCases.toString());
     }
 
-    private static void convertTestCaseToTest(boolean validateFields, Integer testCaseId) throws
-            QpackSoapClientException, IOException, InterruptedException, JiraRestClientException {
+    private static void convertTestCaseToTest(boolean validateFields, Integer testCaseId) throws InterruptedException {
         logger.debug(String.format("Fetching TC-%s from QPACK", testCaseId));
         QpackObject qpackObject;
         QpackWebObject qpackWebObject;
@@ -105,9 +105,11 @@ public class QpackToJiraWithXrayMigrator {
             qpackObject = qpackSoapClientInstance.getQpackObject(testCaseId);
             qpackWebObject = qpackSoapClientInstance.getQpackWebObject(testCaseId);
         } catch (QpackSoapClientException qex) {
-            failedTestCases.add(testCaseId.toString());
+            logger.error("Failed to contact QPACK", qex);
+            testCaseConvertionFailed(testCaseId.toString());
             return;
         }
+
 
         // build new path for Jira, and extract version from it:
         StringBuilder objectNamedPath = new StringBuilder();
@@ -115,17 +117,27 @@ public class QpackToJiraWithXrayMigrator {
         String objectPath = qpackWebObject.getPath();
         String[] objectPathElements = objectPath.split("\\\\");
         for (int i = 1; i < objectPathElements.length; i++) {
-            String pathElementName = String.format("\\%s", qpackSoapClientInstance.getQpackObject(Integer
-                    .parseInt
+            String pathElementName;
+            try {
+                pathElementName = String.format("\\%s", qpackSoapClientInstance.getQpackObject(Integer.parseInt
+                        (objectPathElements[i])).getFieldValue(QpackFieldKey.NAME.value()));
+            } catch (QpackSoapClientException qex) {
+                logger.error("Failed to contact QPACK", qex);
+                testCaseConvertionFailed(testCaseId.toString());
+                return;
+            }
 
-                            (objectPathElements[i])).getFieldValue(QpackFieldKey.NAME.value()));
             if (pathElementName.contains("SR")) {
-                String versionRegex = "(\\\\SR\\d+\\.\\d+)";
-                Pattern p = Pattern.compile(versionRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+                String re1 = ".*?";    // Non-greedy match on filler
+                String re2 = "(SR)";    // SR
+                String re3 = ".*?";    // Non-greedy match on filler
+                String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number that matches WX.YZ format
+                Pattern p = Pattern.compile(re1 + re2 + re3 + re4, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
                 Matcher m = p.matcher(pathElementName);
                 if (m.find()) {
-                    String word = m.group(1);
-                    actualVersion = word.substring(1);
+                    if (actualVersion.isEmpty()) {
+                        actualVersion = m.group(1) + m.group(2);
+                    }
                 }
             }
             objectNamedPath.append(pathElementName);
@@ -133,6 +145,7 @@ public class QpackToJiraWithXrayMigrator {
         if (actualVersion.isEmpty()) {
             actualVersion = jiraDefaultTestVersion;
         }
+
 
         // update qpackOjbect with new path field:
         qpackObject.addFieldToObjectFields(JiraFieldKey.PATH.value(), objectNamedPath.toString());
@@ -181,7 +194,13 @@ public class QpackToJiraWithXrayMigrator {
             splitDescription[1] = splitDescription[1].substring(splitDescription[1].indexOf("</p>"));
             // download file to current folder, and add file name to downloaded files list
             String imageFileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            FileUtils.copyURLToFile(new URL(imageUrl), new File(imageFileName));
+            try {
+                FileUtils.copyURLToFile(new URL(imageUrl), new File(imageFileName));
+            } catch (IOException e) {
+                logger.error("Failed to download attachment from QPACK", e);
+                testCaseConvertionFailed(testCaseId.toString());
+                return;
+            }
             imagesToUpload.add(imageFileName);
             // replace entire paragraph of image path in description to jira format
             qpackObjectDescriptionValue = String.format("%s !%s|thumbnail!%s", splitDescription[0],
@@ -213,10 +232,23 @@ public class QpackToJiraWithXrayMigrator {
         }
 
         // create issue (of type test) in JIRA
-        String jiraIssueKey = jiraRestClientInstance.createIssue(qpackObject.getFields(), jiraTestIssueType);
+        String jiraIssueKey = null;
+        try {
+            jiraIssueKey = jiraRestClientInstance.createIssue(qpackObject.getFields(), jiraTestIssueType);
+        } catch (JiraRestClientException e) {
+            logger.error(e.getMessage());
+            testCaseConvertionFailed(testCaseId.toString());
+            return;
+        }
 
         // upload all downloaded files as attachments, empty the list
-        jiraRestClientInstance.uploadAttachmentsToIssue(imagesToUpload, jiraIssueKey);
+        try {
+            jiraRestClientInstance.uploadAttachmentsToIssue(imagesToUpload, jiraIssueKey);
+        } catch (JiraRestClientException e) {
+            logger.error(e.getMessage());
+            testCaseConvertionFailed(testCaseId.toString());
+            return;
+        }
 
         // delete images from local file system:
         for (String image : imagesToUpload) {
@@ -228,9 +260,14 @@ public class QpackToJiraWithXrayMigrator {
         imagesToUpload.clear();
 
         // update output file
-        excelFileHandlerInstance.appendLineToOutputFile(testCaseId.toString(), qpackObject.getFieldValue
-                (JiraFieldKey.QPACK_LINK.value()), jiraIssueKey, String.format(jiraIssueUrlPrefix, jiraUrl,
-                jiraIssueKey));
+        try {
+            excelFileHandlerInstance.appendLineToOutputFile(testCaseId.toString(), qpackObject.getFieldValue
+                    (JiraFieldKey.QPACK_LINK.value()), jiraIssueKey, String.format(jiraIssueUrlPrefix, jiraUrl,
+                    jiraIssueKey));
+        } catch (IOException e) {
+            testCaseConvertionFailed(testCaseId.toString());
+            return;
+        }
         logger.debug(String.format("QPACK TC-%s was converted to JIRA issue: ", testCaseId));
     }
 
@@ -241,5 +278,17 @@ public class QpackToJiraWithXrayMigrator {
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         System.out.println("Continuing migration ...");
+    }
+
+    private static void printStatus(int currentIndex, int totalTestCases) {
+        if (currentIndex % statusInterval == 0) {
+            logger.info(String.format("[%s%%] %s test cases converted", currentIndex * 100 / totalTestCases,
+                    currentIndex));
+        }
+    }
+
+    private static void testCaseConvertionFailed(String testCaseId) {
+        failedTestCases.add(String.format("TC-%s", testCaseId));
+        logger.error(String.format("Failed to convert TC-%s", testCaseId));
     }
 }

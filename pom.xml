@@ -128,12 +128,6 @@
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
         </dependency>
-        <!-- progress status - https://github.com/ctongfei/progressbar -->
-        <dependency>
-            <groupId>me.tongfei</groupId>
-            <artifactId>progressbar</artifactId>
-            <version>0.7.0</version>
-        </dependency>
         <!-- https://stackoverflow.com/questions/20473689/org-xml-sax-saxnotrecognizedexception-feature-http-javax-xml-xmlconstants-fe-->
         <dependency>
             <groupId>xerces</groupId>

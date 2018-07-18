@@ -74,8 +74,8 @@ public class QpackSoapClient {
             qpackObject = (QpackObject) unmarshaller.unmarshal(new StringReader(result));
             return qpackObject;
         } catch (JAXBException e) {
-            throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s",
-                    result));
+            throw new QpackSoapClientException(String.format("XML conversion error for ID=%s. Got the following from " +
+                    "API:\n%s", id, result));
         }
     }
 
