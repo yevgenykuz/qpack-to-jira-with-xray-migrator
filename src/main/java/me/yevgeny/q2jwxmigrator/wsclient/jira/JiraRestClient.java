@@ -113,8 +113,8 @@ public class JiraRestClient {
                             }
                             StringJoiner sj = new StringJoiner(System.lineSeparator());
                             sj.add("Field info:");
-                            sj.add(String.format("[%s] Key:%s <-> Value:%s", jiraField.getId(), qpackField
-                                    .getName(), qpackField.getValue()));
+                            sj.add(String.format("[%s] Key:%s <-> Value:%s", jiraField.getId(), qpackField.getName(),
+                                    qpackField.getValue()));
                             List<CustomFieldOption> customFieldAllowedValues = client.getCustomFieldAllowedValues
                                     (jiraField.getId(), jiraProjectKey, issueType);
                             sj.add("Allowed values:" + Arrays.toString(customFieldAllowedValues.toArray()));

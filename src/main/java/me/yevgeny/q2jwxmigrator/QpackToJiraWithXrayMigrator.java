@@ -129,7 +129,7 @@ public class QpackToJiraWithXrayMigrator {
 
             if (pathElementName.contains("SR")) {
                 String re1 = ".*?";    // Non-greedy match on filler
-                String re2 = "(SR)";    // SR
+                String re2 = "(SR)";    // "SR"
                 String re3 = ".*?";    // Non-greedy match on filler
                 String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number that matches WX.YZ format
                 Pattern p = Pattern.compile(re1 + re2 + re3 + re4, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -173,8 +173,8 @@ public class QpackToJiraWithXrayMigrator {
         qpackObject.addFieldToObjectFields(JiraFieldKey.MANUAL_TEST_STEPS.value(), xrayTestStepList.toJson());
 
         // add link to QPACK TC
-        qpackObject.addFieldToObjectFields(JiraFieldKey.QPACK_LINK.value(), String.format
-                (qpackTestcaseUrlPattern, qpackUrl, testCaseId));
+        qpackObject.addFieldToObjectFields(JiraFieldKey.QPACK_LINK.value(), String.format(qpackTestcaseUrlPattern,
+                qpackUrl, testCaseId));
 
         // convert description to jira markup
         List<String> imagesToUpload = new ArrayList<>();
@@ -203,8 +203,8 @@ public class QpackToJiraWithXrayMigrator {
             }
             imagesToUpload.add(imageFileName);
             // replace entire paragraph of image path in description to jira format
-            qpackObjectDescriptionValue = String.format("%s !%s|thumbnail!%s", splitDescription[0],
-                    imageFileName, splitDescription[1]);
+            qpackObjectDescriptionValue = String.format("%s !%s|thumbnail!%s", splitDescription[0], imageFileName,
+                    splitDescription[1]);
         }
         // convert again for actual jira markup
         qpackObjectDescriptionValue = converter.convertXHtmlToWikiMarkup(qpackObjectDescriptionValue);

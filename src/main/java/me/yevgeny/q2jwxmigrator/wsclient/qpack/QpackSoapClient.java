@@ -56,9 +56,9 @@ public class QpackSoapClient {
         String result;
 
         try {
-            result = httpPost("Get_Object", new BasicNameValuePair("User_Name", ourInstance.qpackUsername),
-                    new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair("ID",
-                            Integer.toString(id)));
+            result = httpPost("Get_Object", new BasicNameValuePair("User_Name", ourInstance.qpackUsername), new
+                    BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair("ID",
+                    Integer.toString(id)));
         } catch (HttpException e) {
             throw new QpackSoapClientException(e.getMessage());
         }
@@ -83,10 +83,10 @@ public class QpackSoapClient {
         String result;
 
         try {
-            result = httpPost("QPack_Web_RootTree_Item", new BasicNameValuePair("User_Name", ourInstance.qpackUsername),
-                    new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new BasicNameValuePair
-                            ("ItemId", Integer.toString(id)), new BasicNameValuePair("WebsiteURL", ourInstance
-                            .qpackUrl));
+            result = httpPost("QPack_Web_RootTree_Item", new BasicNameValuePair("User_Name", ourInstance
+                    .qpackUsername), new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new
+                    BasicNameValuePair("ItemId", Integer.toString(id)), new BasicNameValuePair("WebsiteURL",
+                    ourInstance.qpackUrl));
         } catch (HttpException e) {
             throw new QpackSoapClientException(e.getMessage());
         }
@@ -118,8 +118,7 @@ public class QpackSoapClient {
         String response;
 
         HttpPost httpPostUrl = new HttpPost(ourInstance.qpackUrl + QPACK_API_PATH + method);
-        logger.debug(String.format("Sending HTTP Post to: %s with: %s", httpPostUrl.getURI(), Arrays.toString
-                (params)));
+        logger.debug(String.format("Sending HTTP Post to: %s with: %s", httpPostUrl.getURI(), Arrays.toString(params)));
 
         try {
             httpPostUrl.setEntity(new UrlEncodedFormEntity(Arrays.asList(params), "UTF-8"));

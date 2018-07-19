@@ -92,13 +92,14 @@ public class QpackSoapClientTests {
                     (objectPathElements[i])).getFieldValue("Name"));
 
             if (pathElementName.contains("SR")) {
-                String versionRegex = "(\\\\SR\\d+\\.\\d+)";
-                Pattern p = Pattern.compile(versionRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+                String re1 = ".*?";    // Non-greedy match on filler
+                String re2 = "(SR)";    // SR
+                String re3 = ".*?";    // Non-greedy match on filler
+                String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number that matches WX.YZ format
+                Pattern p = Pattern.compile(re1 + re2 + re3 + re4, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
                 Matcher m = p.matcher(pathElementName);
                 if (m.find()) {
-                    String word = m.group(1);
-                    actualVersion = word.substring(1);
-                    System.out.println(actualVersion);
+                    actualVersion = m.group(1) + m.group(2);
                 }
             }
             objectNamedPath.append(pathElementName);
