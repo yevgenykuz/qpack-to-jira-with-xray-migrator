@@ -32,13 +32,15 @@ public class QpackXmlHelper {
     }
 
     public static String surroundQpackWebObjectDescriptionWithTags(String str) {
-        String openingPattern = "&lt;[pPbB]";
-        String closingPattern = "<steps>";
+        String openingPattern = "obj_status_desc=";
         String[] split = str.split(openingPattern, 2);
-        String[] secondSplit = split[1].split(closingPattern, 2);
+        String middlePattern = ">";
+        String[] secondSplit = split[1].split(middlePattern, 2);
+        String closingPattern = "<steps>";
+        String[] thirdSplit = secondSplit[1].split(closingPattern, 2);
 
-        return split[0] + "<description>" + openingPattern + secondSplit[0] + "</description>" + closingPattern +
-                secondSplit[1];
+        return split[0] + openingPattern + secondSplit[0] + middlePattern + "<description>" + thirdSplit[0] +
+                "</description>" + closingPattern + thirdSplit[1];
     }
 
     public static String XMLToString(String xml) {
