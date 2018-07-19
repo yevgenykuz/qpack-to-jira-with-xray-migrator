@@ -39,6 +39,12 @@ public class QpackXmlHelper {
         String closingPattern = "<steps>";
         String[] thirdSplit = secondSplit[1].split(closingPattern, 2);
 
+        // handle TC without steps:
+        if (thirdSplit.length < 2) {
+            closingPattern = "</object>";
+            thirdSplit = secondSplit[1].split(closingPattern, 2);
+        }
+
         return split[0] + openingPattern + secondSplit[0] + middlePattern + "<description>" + thirdSplit[0] +
                 "</description>" + closingPattern + thirdSplit[1];
     }

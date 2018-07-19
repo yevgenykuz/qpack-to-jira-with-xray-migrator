@@ -85,7 +85,7 @@ public class ExcelFileHandler {
             Workbook workbook = new XSSFWorkbook();
             Sheet sheet = workbook.createSheet("Failed TC List");
             Row row = sheet.createRow(0);
-            row.createCell(0).setCellValue("Failed to convert the following test cases:");
+            row.createCell(0).setCellValue("Key:");
             writeWorkbookToFile(workbook, failedTcListFileName);
         } else {
             logger.info("Failed TC list file already exists, data will be appended");
