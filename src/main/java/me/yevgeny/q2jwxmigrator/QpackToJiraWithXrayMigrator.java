@@ -157,20 +157,22 @@ public class QpackToJiraWithXrayMigrator {
         qpackObject.addFieldToObjectFields(JiraFieldKey.COMPONENT.value(), jiraTestDefaultComponent);
 
         // add TC steps from qpackWebObject
-        List<Step> xrayStepList = new ArrayList<>();
-        for (QpackWebObject.Steps.Step step : qpackWebObject.getSteps().getStep()) {
-            Step s = new Step();
-            s.setIndex(step.getStepno());
-            s.setStep(converter.convertXHtmlToWikiMarkup(step.getDescription()));
-            s.setResult(converter.convertXHtmlToWikiMarkup(step.getExpectedresult()));
-            xrayStepList.add(s);
+        if (qpackWebObject.getSteps() != null) {
+            List<Step> xrayStepList = new ArrayList<>();
+            for (QpackWebObject.Steps.Step step : qpackWebObject.getSteps().getStep()) {
+                Step s = new Step();
+                s.setIndex(step.getStepno());
+                s.setStep(converter.convertXHtmlToWikiMarkup(step.getDescription()));
+                s.setResult(converter.convertXHtmlToWikiMarkup(step.getExpectedresult()));
+                xrayStepList.add(s);
+            }
+            XrayTestStepList xrayTestStepList = new XrayTestStepList();
+            xrayTestStepList.setSteps(xrayStepList);
+            QpackObjectField stepsField = new QpackObjectField();
+            stepsField.setName(JiraFieldKey.MANUAL_TEST_STEPS.value());
+            stepsField.setValue(xrayTestStepList.toJson());
+            qpackObject.addFieldToObjectFields(JiraFieldKey.MANUAL_TEST_STEPS.value(), xrayTestStepList.toJson());
         }
-        XrayTestStepList xrayTestStepList = new XrayTestStepList();
-        xrayTestStepList.setSteps(xrayStepList);
-        QpackObjectField stepsField = new QpackObjectField();
-        stepsField.setName(JiraFieldKey.MANUAL_TEST_STEPS.value());
-        stepsField.setValue(xrayTestStepList.toJson());
-        qpackObject.addFieldToObjectFields(JiraFieldKey.MANUAL_TEST_STEPS.value(), xrayTestStepList.toJson());
 
         // add link to QPACK TC
         qpackObject.addFieldToObjectFields(JiraFieldKey.QPACK_LINK.value(), String.format(qpackTestcaseUrlPattern,
