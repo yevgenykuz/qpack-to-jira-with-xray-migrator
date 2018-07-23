@@ -183,6 +183,7 @@ public class QpackToJiraWithXrayMigrator {
         String qpackObjectDescriptionValue = qpackObject.getFieldValue(QpackFieldKey.DESCRIPTION.value());
         // convert once for xhtml
         qpackObjectDescriptionValue = converter.convertXHtmlToWikiMarkup(qpackObjectDescriptionValue);
+
         // if needed, download images from qpack and update description field
         String qpackImageLocationPrefix = String.format(qpackImageLocationPattern, qpackUrl);
         while (qpackObjectDescriptionValue.contains(qpackImageLocationPrefix)) {
@@ -209,7 +210,13 @@ public class QpackToJiraWithXrayMigrator {
                     splitDescription[1]);
         }
         // convert again for actual jira markup
-        qpackObjectDescriptionValue = converter.convertXHtmlToWikiMarkup(qpackObjectDescriptionValue);
+        try {
+            qpackObjectDescriptionValue = converter.convertXHtmlToWikiMarkup(qpackObjectDescriptionValue);
+        } catch (Exception e) {
+            logger.error("Failed to convert QPACK HTML description to JIRA markup", e);
+            testCaseConvertionFailed(testCaseId.toString());
+            return;
+        }
 
         // fix thumbnail escape characters
         qpackObjectDescriptionValue = qpackObjectDescriptionValue.replace("\\!", "!").replace("\\|", "|");
