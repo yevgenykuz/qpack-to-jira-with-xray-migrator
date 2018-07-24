@@ -162,8 +162,14 @@ public class QpackToJiraWithXrayMigrator {
             for (QpackWebObject.Steps.Step step : qpackWebObject.getSteps().getStep()) {
                 Step s = new Step();
                 s.setIndex(step.getStepno());
-                s.setStep(converter.convertXHtmlToWikiMarkup(step.getDescription()));
-                s.setResult(converter.convertXHtmlToWikiMarkup(step.getExpectedresult()));
+                try {
+                    s.setStep(converter.convertXHtmlToWikiMarkup(step.getDescription()));
+                    s.setResult(converter.convertXHtmlToWikiMarkup(step.getExpectedresult()));
+                } catch (Exception e) {
+                    logger.error("Failed to convert QPACK HTML step description to JIRA markup", e);
+                    testCaseConvertionFailed(testCaseId.toString());
+                    return;
+                }
                 xrayStepList.add(s);
             }
             XrayTestStepList xrayTestStepList = new XrayTestStepList();
