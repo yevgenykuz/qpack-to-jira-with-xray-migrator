@@ -297,7 +297,7 @@ public class QpackToJiraWithXrayMigrator {
 
     private static void printStatus(int currentIndex, int totalTestCases) {
         if (currentIndex % statusInterval == 0) {
-            logger.info(String.format("[%s%%] %s test cases converted", currentIndex * 100 / totalTestCases,
+            logger.info(String.format("[%s%%] %s test cases analyzed", currentIndex * 100 / totalTestCases,
                     currentIndex));
         }
     }
