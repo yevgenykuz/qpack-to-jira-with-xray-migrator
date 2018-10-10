@@ -1,5 +1,6 @@
 package me.yevgeny.q2jwxmigrator.wsclient.qpack;
 
+import me.yevgeny.q2jwxmigrator.model.qpackguiobject.QpackGuiObject;
 import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObject;
 import me.yevgeny.q2jwxmigrator.model.qpackwebobject.QpackWebObject;
 import me.yevgeny.q2jwxmigrator.utilities.ConfigurationManager;
@@ -26,8 +27,10 @@ import java.net.URL;
 import java.util.Arrays;
 
 public class QpackSoapClient {
-    private static final String QPACK_API_PATH = "/QPack/QPackServ/QPackServ.asmx/";
     private static final Logger logger = Logger.getLogger(QpackSoapClient.class.getSimpleName());
+    private static final String QPACK_API_PATH = "/QPack/QPackServ/QPackServ.asmx/";
+    private static final String QPACK_ITEM_TYPE = "T_CASE";
+    private static final String QPACK_VER_ID = "1022";
     private static QpackSoapClient ourInstance;
 
     private CloseableHttpClient client;
@@ -101,6 +104,31 @@ public class QpackSoapClient {
             Unmarshaller unmarshaller = context.createUnmarshaller();
             qpackWebQpackWebObject = (QpackWebObject) unmarshaller.unmarshal(new StringReader(result));
             return qpackWebQpackWebObject;
+        } catch (JAXBException e) {
+            throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s",
+                    result));
+        }
+    }
+
+    public QpackGuiObject getQpackGuiObject(int id) throws QpackSoapClientException {
+        String result;
+
+        try {
+            result = httpPost("QW_Get_Object_View", new BasicNameValuePair("User_Name", ourInstance
+                    .qpackUsername), new BasicNameValuePair("User_Password", ourInstance.qpackPassword), new
+                    BasicNameValuePair("Item_id", Integer.toString(id)), new BasicNameValuePair("Item_Type",
+                    ourInstance.QPACK_ITEM_TYPE), new BasicNameValuePair("Ver_Id", ourInstance.QPACK_VER_ID));
+        } catch (HttpException e) {
+            throw new QpackSoapClientException(e.getMessage());
+        }
+
+        QpackGuiObject qpackGuiObject;
+
+        try {
+            JAXBContext context = JAXBContext.newInstance(QpackGuiObject.class);
+            Unmarshaller unmarshaller = context.createUnmarshaller();
+            qpackGuiObject = (QpackGuiObject) unmarshaller.unmarshal(new StringReader(result));
+            return qpackGuiObject;
         } catch (JAXBException e) {
             throw new QpackSoapClientException(String.format("XML conversion error. Got the following from API:\n%s",
                     result));

@@ -1,5 +1,6 @@
 package me.yevgeny.q2jwxmigrator.utilities;
 
+import javafx.util.Pair;
 import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -13,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class ExcelFileHandler {
@@ -96,9 +98,9 @@ public class ExcelFileHandler {
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
 
-            for (int i = 0; i < failedTcIds.size(); i++) {
+            for (String failedTcId : failedTcIds) {
                 Row newRow = sheet.createRow(++lastRowNum);
-                newRow.createCell(0).setCellValue(failedTcIds.get(i));
+                newRow.createCell(0).setCellValue(failedTcId);
             }
 
             logger.debug("Writing failed TC list to file");
@@ -107,6 +109,31 @@ public class ExcelFileHandler {
             logger.error("Failed to open file", e);
             throw e;
         }
+    }
+
+    public List<Pair<Integer, String>> getQpackTestCaseToJiraTestMapping() throws IOException {
+        List<Pair<Integer, String>> mapping = new ArrayList<>();
+
+        try (FileInputStream excelFile = new FileInputStream(new File(outputFileName))) {
+            Workbook workbook = new XSSFWorkbook(excelFile);
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = sheet.rowIterator();
+            // skip first row:
+            rowIterator.next();
+
+            while (rowIterator.hasNext()) {
+                Row currentRow = rowIterator.next();
+                Pair<Integer, String> pair = new Pair<>(Integer.valueOf(currentRow.getCell(0).getStringCellValue()),
+                        currentRow.getCell(2).getStringCellValue());
+                mapping.add(pair);
+            }
+        } catch (IOException e) {
+            logger.error("Failed to read from file", e);
+            throw e;
+        }
+
+        return mapping;
+
     }
 
     private void createOutputFileIfNeeded() throws IOException {

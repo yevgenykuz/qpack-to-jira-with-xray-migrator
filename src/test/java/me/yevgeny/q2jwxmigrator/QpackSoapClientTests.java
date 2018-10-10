@@ -2,6 +2,7 @@ package me.yevgeny.q2jwxmigrator;
 
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.Step;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.XrayTestStepList;
+import me.yevgeny.q2jwxmigrator.model.qpackguiobject.QpackGuiObject;
 import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObject;
 import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObjectField;
 import me.yevgeny.q2jwxmigrator.model.qpackwebobject.QpackWebObject;
@@ -50,6 +51,22 @@ public class QpackSoapClientTests {
         }
 
         assertEquals(qpackwebObject.getPath(), objectFieldPathValue);
+    }
+
+    @Test
+    @DisplayName("Test get Qpack GuiObject")
+    void testGetQpackGuiObject() throws QpackSoapClientException {
+        int id = 71592;
+        String expectedObjectPath = "\\LTE eNB\\Templates\\How to Write Test plan - Methodology\\[SR XX.XX] Feature " +
+                "Name\\Feature Cross Functional - legacy features\\Multi-cell Cross Feature Testing";
+        String actualObjectPath = "";
+        QpackGuiObject qpackGuiObject = QpackSoapClient.getInstance().getQpackGuiObject(id);
+        List<QpackGuiObject.Section.Path.Item> objectPathItems = qpackGuiObject.getSection().get(0).getPath().getItem();
+        for (QpackGuiObject.Section.Path.Item objectPathItem : objectPathItems) {
+            actualObjectPath += String.format("\\%s", objectPathItem.getObjName());
+        }
+
+        assertEquals(expectedObjectPath, actualObjectPath);
     }
 
     @Test

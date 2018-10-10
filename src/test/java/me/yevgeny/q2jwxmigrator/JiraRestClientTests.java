@@ -37,4 +37,25 @@ public class JiraRestClientTests {
         }
         assertTrue(i == 1);
     }
+
+    @Test
+    @DisplayName("Test get JIRA test path")
+    void testGetJiraTestPath() throws JiraRestClientException {
+        String issueKey = "SIR-12358";
+        String expectedObjectPath = "\\LTE eNB\\Templates\\How to Write Test plan - Methodology\\[SR XX.XX] Feature " +
+                "Name\\Feature Cross Functional\\Multi-cell Cross Feature Testing";
+        String pathFieldKey = "Path";
+        String pathFieldId = "";
+        List<JiraField> jiraFields = JiraRestClient.getInstance().getJiraFieldMapping();
+        for (JiraField jiraField : jiraFields) {
+            if (jiraField.getName().equals(pathFieldKey)) {
+                pathFieldId = jiraField.getId();
+            }
+        }
+
+        Issue jiraIssue = JiraRestClient.getInstance().getIssue(issueKey);
+        Object field = jiraIssue.getField(pathFieldId);
+
+        assertEquals(expectedObjectPath, field.toString());
+    }
 }

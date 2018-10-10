@@ -1,8 +1,11 @@
 package me.yevgeny.q2jwxmigrator;
 
 import com.atlassian.renderer.wysiwyg.converter.DefaultWysiwygConverter;
+import javafx.util.Pair;
+import me.yevgeny.q2jwxmigrator.model.jirafield.JiraField;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.Step;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.XrayTestStepList;
+import me.yevgeny.q2jwxmigrator.model.qpackguiobject.QpackGuiObject;
 import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObject;
 import me.yevgeny.q2jwxmigrator.model.qpackobject.QpackObjectField;
 import me.yevgeny.q2jwxmigrator.model.qpackwebobject.QpackWebObject;
@@ -14,6 +17,7 @@ import me.yevgeny.q2jwxmigrator.wsclient.jira.JiraRestClient;
 import me.yevgeny.q2jwxmigrator.wsclient.jira.JiraRestClientException;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClient;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClientException;
+import net.rcarz.jiraclient.Issue;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -23,6 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +44,7 @@ public class QpackToJiraWithXrayMigrator {
 
     private static final int oneSecond = 1000;
 
+    private static ConfigurationManager configurationManagerInstance;
     private static ExcelFileHandler excelFileHandlerInstance;
     private static QpackSoapClient qpackSoapClientInstance;
     private static JiraRestClient jiraRestClientInstance;
@@ -52,9 +58,14 @@ public class QpackToJiraWithXrayMigrator {
 
 
     public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException {
-        logger.info("Starting migration...");
+        init();
+        // migrate();
+        validateMigration();
+    }
 
-        ConfigurationManager configurationManagerInstance = ConfigurationManager.getInstance();
+    private static void init() throws IOException, QpackSoapClientException, JiraRestClientException {
+        logger.info("Initializing ...");
+        configurationManagerInstance = ConfigurationManager.getInstance();
         excelFileHandlerInstance = ExcelFileHandler.getInstance();
         qpackSoapClientInstance = QpackSoapClient.getInstance();
         jiraRestClientInstance = JiraRestClient.getInstance();
@@ -62,11 +73,15 @@ public class QpackToJiraWithXrayMigrator {
 
         qpackUrl = configurationManagerInstance.getConfigurationValue("qpackUrl");
         jiraUrl = configurationManagerInstance.getConfigurationValue("jiraUrl");
+    }
+
+    private static void migrate() throws IOException, QpackSoapClientException, JiraRestClientException {
+        logger.info("Starting migration ...");
 
         List<Integer> testCaseIds = excelFileHandlerInstance.getTcListFromInputFile();
         int totalTestCases = testCaseIds.size();
         if (totalTestCases < 1) {
-            logger.error("No test cases found in input file, aborting...");
+            logger.error("No test cases found in input file, aborting ...");
             System.exit(1);
         }
 
@@ -247,7 +262,7 @@ public class QpackToJiraWithXrayMigrator {
         }
 
         // create issue (of type test) in JIRA
-        String jiraIssueKey = null;
+        String jiraIssueKey;
         try {
             jiraIssueKey = jiraRestClientInstance.createIssue(qpackObject.getFields(), jiraTestIssueType);
         } catch (JiraRestClientException e) {
@@ -305,5 +320,66 @@ public class QpackToJiraWithXrayMigrator {
     private static void testCaseConvertionFailed(String testCaseId) {
         failedTestCases.add(String.format("TC-%s", testCaseId));
         logger.error(String.format("Failed to convert TC-%s", testCaseId));
+    }
+
+
+    private static void validateMigration() throws JiraRestClientException, IOException, QpackSoapClientException {
+        // validate "path" field in JIRA due to inconsistency in QPACK DB
+
+        logger.info("Starting migration validation ...");
+
+        List<Pair<Integer, String>> qpackTestCaseToJiraTestMapping =
+                excelFileHandlerInstance.getQpackTestCaseToJiraTestMapping();
+
+        int totalTests = qpackTestCaseToJiraTestMapping.size();
+        if (totalTests < 1) {
+            logger.error("No tests found for validation, aborting validation ...");
+            System.exit(1);
+        }
+
+        statusInterval = (int) (totalTests * (1.0f / 100.0f));
+        statusInterval = (statusInterval == 0) ? 1 : statusInterval;
+
+        logger.info(String.format("%s Jira Test will be validated", totalTests));
+
+        logger.info(String.format("Validating \"%s\" field", JiraFieldKey.PATH.value()));
+        int pathErrors = 0;
+        StringJoiner pathErrorsDetails = new StringJoiner("======" + System.lineSeparator());
+
+        String pathFieldId = "";
+        List<JiraField> jiraFields = jiraRestClientInstance.getJiraFieldMapping();
+        for (JiraField jiraField : jiraFields) {
+            if (jiraField.getName().equals(JiraFieldKey.PATH.value())) {
+                pathFieldId = jiraField.getId();
+            }
+        }
+
+        if (pathFieldId.isEmpty()) {
+            throw new JiraRestClientException(String.format("Couldn't find %s field in JIRA", JiraFieldKey.PATH));
+        }
+
+        for (int i = 1; i < qpackTestCaseToJiraTestMapping.size(); i++) {
+            StringBuilder qpackObjectPath = new StringBuilder();
+            QpackGuiObject qpackGuiObject =
+                    qpackSoapClientInstance.getQpackGuiObject(qpackTestCaseToJiraTestMapping.get(i).getKey());
+            List<QpackGuiObject.Section.Path.Item> objectPathItems =
+                    qpackGuiObject.getSection().get(0).getPath().getItem();
+            for (QpackGuiObject.Section.Path.Item objectPathItem : objectPathItems) {
+                qpackObjectPath.append(String.format("\\%s", objectPathItem.getObjName()));
+            }
+
+            Issue jiraIssue = jiraRestClientInstance.getIssue(qpackTestCaseToJiraTestMapping.get(i).getValue());
+            Object jiraPathField = jiraIssue.getField(pathFieldId);
+            String jiraObjectPath = jiraPathField.toString();
+
+            if (!qpackObjectPath.toString().equals(jiraObjectPath)) {
+                pathErrors++;
+                pathErrorsDetails.add(String.format("QPACK Test Case ID: %s\nPath: %s\nJIRA Test Key: %s\nPath: %s",
+                        qpackTestCaseToJiraTestMapping.get(i).getKey(), qpackObjectPath.toString(),
+                        qpackTestCaseToJiraTestMapping.get(i).getValue(), jiraObjectPath));
+            }
+            printStatus(i, totalTests);
+        }
+        logger.info(String.format("%s errors found:\n%s", pathErrors, pathErrorsDetails.toString()));
     }
 }
