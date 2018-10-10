@@ -17,7 +17,9 @@ import me.yevgeny.q2jwxmigrator.wsclient.jira.JiraRestClient;
 import me.yevgeny.q2jwxmigrator.wsclient.jira.JiraRestClientException;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClient;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClientException;
+import net.rcarz.jiraclient.Field;
 import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -27,7 +29,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,9 +56,11 @@ public class QpackToJiraWithXrayMigrator {
 
     private static int statusInterval;
     private static List<String> failedTestCases = new ArrayList<>();
+    private static List<String> failedTests = new ArrayList<>();
 
 
-    public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException {
+    public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException,
+            JiraException {
         init();
         // migrate();
         validateMigration();
@@ -107,7 +110,8 @@ public class QpackToJiraWithXrayMigrator {
             if (!failedTestCases.isEmpty()) {
                 logger.info(String.format("Failed to convert some test cases. Check \"%s\" output file",
                         ExcelFileHandler.failedTcListFileName));
-                excelFileHandlerInstance.createFailedTcListFileIfNeeded(failedTestCases);
+                excelFileHandlerInstance.createFailedTcListFileIfNeeded(failedTestCases,
+                        ExcelFileHandler.failedTcListFileName);
             }
         }
     }
@@ -121,7 +125,7 @@ public class QpackToJiraWithXrayMigrator {
             qpackWebObject = qpackSoapClientInstance.getQpackWebObject(testCaseId);
         } catch (QpackSoapClientException qex) {
             logger.error("Failed to contact QPACK", qex);
-            testCaseConvertionFailed(testCaseId.toString());
+            testCaseConversionFailed(testCaseId.toString());
             return;
         }
 
@@ -138,7 +142,7 @@ public class QpackToJiraWithXrayMigrator {
                         (objectPathElements[i])).getFieldValue(QpackFieldKey.NAME.value()));
             } catch (QpackSoapClientException qex) {
                 logger.error("Failed to contact QPACK", qex);
-                testCaseConvertionFailed(testCaseId.toString());
+                testCaseConversionFailed(testCaseId.toString());
                 return;
             }
 
@@ -182,7 +186,7 @@ public class QpackToJiraWithXrayMigrator {
                     s.setResult(converter.convertXHtmlToWikiMarkup(step.getExpectedresult()));
                 } catch (Exception e) {
                     logger.error("Failed to convert QPACK HTML step description to JIRA markup", e);
-                    testCaseConvertionFailed(testCaseId.toString());
+                    testCaseConversionFailed(testCaseId.toString());
                     return;
                 }
                 xrayStepList.add(s);
@@ -222,7 +226,7 @@ public class QpackToJiraWithXrayMigrator {
                 FileUtils.copyURLToFile(new URL(imageUrl), new File(imageFileName));
             } catch (IOException e) {
                 logger.error("Failed to download attachment from QPACK", e);
-                testCaseConvertionFailed(testCaseId.toString());
+                testCaseConversionFailed(testCaseId.toString());
                 return;
             }
             imagesToUpload.add(imageFileName);
@@ -235,7 +239,7 @@ public class QpackToJiraWithXrayMigrator {
             qpackObjectDescriptionValue = converter.convertXHtmlToWikiMarkup(qpackObjectDescriptionValue);
         } catch (Exception e) {
             logger.error("Failed to convert QPACK HTML description to JIRA markup", e);
-            testCaseConvertionFailed(testCaseId.toString());
+            testCaseConversionFailed(testCaseId.toString());
             return;
         }
 
@@ -267,7 +271,7 @@ public class QpackToJiraWithXrayMigrator {
             jiraIssueKey = jiraRestClientInstance.createIssue(qpackObject.getFields(), jiraTestIssueType);
         } catch (JiraRestClientException e) {
             logger.error(e.getMessage());
-            testCaseConvertionFailed(testCaseId.toString());
+            testCaseConversionFailed(testCaseId.toString());
             return;
         }
 
@@ -276,7 +280,7 @@ public class QpackToJiraWithXrayMigrator {
             jiraRestClientInstance.uploadAttachmentsToIssue(imagesToUpload, jiraIssueKey);
         } catch (JiraRestClientException e) {
             logger.error(e.getMessage());
-            testCaseConvertionFailed(testCaseId.toString());
+            testCaseConversionFailed(testCaseId.toString());
             return;
         }
 
@@ -291,11 +295,11 @@ public class QpackToJiraWithXrayMigrator {
 
         // update output file
         try {
-            excelFileHandlerInstance.appendLineToOutputFile(testCaseId.toString(), qpackObject.getFieldValue
-                    (JiraFieldKey.QPACK_LINK.value()), jiraIssueKey, String.format(jiraIssueUrlPrefix, jiraUrl,
-                    jiraIssueKey));
+            excelFileHandlerInstance.appendLineToOutputFile(ExcelFileHandler.outputFileName, testCaseId.toString(),
+                    qpackObject.getFieldValue(JiraFieldKey.QPACK_LINK.value()), jiraIssueKey,
+                    String.format(jiraIssueUrlPrefix, jiraUrl, jiraIssueKey));
         } catch (IOException e) {
-            testCaseConvertionFailed(testCaseId.toString());
+            testCaseConversionFailed(testCaseId.toString());
             return;
         }
         logger.debug(String.format("QPACK TC-%s was converted to JIRA issue: ", testCaseId));
@@ -317,13 +321,18 @@ public class QpackToJiraWithXrayMigrator {
         }
     }
 
-    private static void testCaseConvertionFailed(String testCaseId) {
+    private static void testCaseConversionFailed(String testCaseId) {
         failedTestCases.add(String.format("TC-%s", testCaseId));
         logger.error(String.format("Failed to convert TC-%s", testCaseId));
     }
 
+    private static void testValidationFailed(String testCaseId, Throwable e) {
+        failedTests.add(testCaseId);
+        logger.error(String.format("Failed to validate TC-%s\n", testCaseId), e);
+    }
 
-    private static void validateMigration() throws JiraRestClientException, IOException, QpackSoapClientException {
+
+    private static void validateMigration() throws JiraRestClientException, IOException {
         // validate "path" field in JIRA due to inconsistency in QPACK DB
 
         logger.info("Starting migration validation ...");
@@ -340,11 +349,9 @@ public class QpackToJiraWithXrayMigrator {
         statusInterval = (int) (totalTests * (1.0f / 100.0f));
         statusInterval = (statusInterval == 0) ? 1 : statusInterval;
 
-        logger.info(String.format("%s Jira Test will be validated", totalTests));
+        logger.info(String.format("%s Jira tests will be validated", totalTests));
 
         logger.info(String.format("Validating \"%s\" field", JiraFieldKey.PATH.value()));
-        int pathErrors = 0;
-        StringJoiner pathErrorsDetails = new StringJoiner("======" + System.lineSeparator());
 
         String pathFieldId = "";
         List<JiraField> jiraFields = jiraRestClientInstance.getJiraFieldMapping();
@@ -358,30 +365,88 @@ public class QpackToJiraWithXrayMigrator {
             throw new JiraRestClientException(String.format("Couldn't find %s field in JIRA", JiraFieldKey.PATH));
         }
 
-        for (int i = 1; i < qpackTestCaseToJiraTestMapping.size(); i++) {
+        try {
+            for (int i = 0; i < qpackTestCaseToJiraTestMapping.size(); i++) {
+                validateTestCase(qpackTestCaseToJiraTestMapping.get(i), pathFieldId);
+                printStatus(i, totalTests);
+            }
+        } catch (Exception e) {
+            logger.error("Validation failed:", e);
+        } finally {
+            if (!failedTests.isEmpty()) {
+                logger.info(String.format("Failed to validate some tests. Check \"%s\" output file",
+                        ExcelFileHandler.validationFailedTestListFileName));
+                excelFileHandlerInstance.createFailedTcListFileIfNeeded(failedTests,
+                        ExcelFileHandler.validationFailedTestListFileName);
+            }
+        }
+        logger.info(String.format("Migration validation complete. Check %s for details", ExcelFileHandler
+                .validationOutputFileName));
+    }
+
+    private static void validateTestCase(Pair<Integer, String> testCaseToTestMappingPair, String pathFieldId) {
+        Integer testCaseID = testCaseToTestMappingPair.getKey();
+        try {
             StringBuilder qpackObjectPath = new StringBuilder();
             QpackGuiObject qpackGuiObject =
-                    qpackSoapClientInstance.getQpackGuiObject(qpackTestCaseToJiraTestMapping.get(i).getKey());
+                    qpackSoapClientInstance.getQpackGuiObject(testCaseID);
             List<QpackGuiObject.Section.Path.Item> objectPathItems =
                     qpackGuiObject.getSection().get(0).getPath().getItem();
             for (QpackGuiObject.Section.Path.Item objectPathItem : objectPathItems) {
                 qpackObjectPath.append(String.format("\\%s", objectPathItem.getObjName()));
             }
 
-            Issue jiraIssue = jiraRestClientInstance.getIssue(qpackTestCaseToJiraTestMapping.get(i).getValue());
+            Issue jiraIssue = jiraRestClientInstance.getIssue(testCaseToTestMappingPair.getValue());
             Object jiraPathField = jiraIssue.getField(pathFieldId);
             String jiraObjectPath = jiraPathField.toString();
 
             if (!qpackObjectPath.toString().equals(jiraObjectPath)) {
-                pathErrors++;
-                logger.error(String.format("\"Path\" field error found for Jira test key: %s",
-                        qpackTestCaseToJiraTestMapping.get(i).getValue()));
-                pathErrorsDetails.add(String.format("QPACK Test Case ID: %s\nPath: %s\nJIRA Test Key: %s\nPath: %s",
-                        qpackTestCaseToJiraTestMapping.get(i).getKey(), qpackObjectPath.toString(),
-                        qpackTestCaseToJiraTestMapping.get(i).getValue(), jiraObjectPath));
+                Issue.FluentUpdate issueUpdate = jiraIssue.update();
+
+                // update jira path to path from qpack:
+                issueUpdate.field(pathFieldId, qpackObjectPath);
+
+                // fix versions in JIRA to relevant version:
+                if (qpackObjectPath.toString().contains("SR")) {
+                    String updatedVersion = "";
+                    for (String pathElementName : qpackObjectPath.toString().split("\\\\")) {
+                        if (pathElementName.contains("SR")) {
+                            String re1 = ".*?";    // Non-greedy match on filler
+                            String re2 = "(SR)";    // "SR"
+                            String re3 = ".*?";    // Non-greedy match on filler
+                            String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number in WX.YZ format
+                            Pattern p = Pattern.compile(re1 + re2 + re3 + re4,
+                                    Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+                            Matcher m = p.matcher(pathElementName);
+                            if (m.find()) {
+                                if (updatedVersion.isEmpty()) {
+                                    updatedVersion = m.group(1) + m.group(2);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    String currentVersion = jiraIssue.getFixVersions().get(0).getName();
+                    if (!updatedVersion.isEmpty() && !currentVersion.equals(updatedVersion)) {
+                        String finalUpdatedVersion = updatedVersion;
+                        issueUpdate.field(Field.VERSIONS, new ArrayList<String>() {{
+                            add(finalUpdatedVersion);
+                        }});
+                        issueUpdate.field(Field.FIX_VERSIONS, new ArrayList<String>() {{
+                            add(finalUpdatedVersion);
+                        }});
+                    }
+                }
+
+                issueUpdate.execute();
+                excelFileHandlerInstance.appendLineToOutputFile(ExcelFileHandler.validationOutputFileName,
+                        testCaseID.toString(), qpackObjectPath.toString(), testCaseToTestMappingPair.getValue(),
+                        jiraObjectPath);
             }
-            printStatus(i, totalTests);
+        } catch (Exception e) {
+            testValidationFailed(testCaseID.toString(), e);
+            return;
         }
-        logger.info(String.format("%s errors found:\n%s", pathErrors, pathErrorsDetails.toString()));
     }
 }

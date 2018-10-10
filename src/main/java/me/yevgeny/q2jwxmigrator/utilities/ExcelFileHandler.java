@@ -20,9 +20,13 @@ import java.util.List;
 public class ExcelFileHandler {
     public static final String outputFileName = "TestCase_To_Test_Mapping.xlsx";
     public static final String failedTcListFileName = "Failed_To_Convert_TC_List.xlsx";
+    public static final String validationOutputFileName = "Migration_Validation_Errors.xlsx";
+    public static final String validationFailedTestListFileName = "Failed_To_Validate_Tests_List.xlsx";
     private static final Logger logger = Logger.getLogger(ExcelFileHandler.class.getSimpleName());
     private static final String outputFileColumns[] = {"QPACK TC ID", "QPACK TC Link", "JIRA Test ID", "JIRA Test " +
             "link"};
+    private static final String validationOutputFileColumns[] = {"QPACK TC ID", "QPACK Path", "JIRA Test ID", "JIRA " +
+            "Path"};
     private static ExcelFileHandler ourInstance;
     private static String tcListFile;
 
@@ -30,7 +34,9 @@ public class ExcelFileHandler {
         if (null == ourInstance) {
             ourInstance = new ExcelFileHandler();
             tcListFile = ConfigurationManager.getInstance().getConfigurationValue("tcListFile");
-            ourInstance.createOutputFileIfNeeded();
+            ourInstance.createOutputFileIfNeeded(outputFileName, "Migration Table", outputFileColumns);
+            ourInstance.createOutputFileIfNeeded(validationOutputFileName, "Migration Validation",
+                    validationOutputFileColumns);
         }
         return ourInstance;
     }
@@ -59,41 +65,42 @@ public class ExcelFileHandler {
         return tcList;
     }
 
-    public void appendLineToOutputFile(String qpackTestcaseId, String qpackTestcaseLink, String JiraTestId, String
-            JiraTestLink) throws IOException {
-        try (FileInputStream outputExcelFileInputStream = new FileInputStream(outputFileName)) {
+    public void appendLineToOutputFile(String fileName, String qpackTestcaseId, String qpackTestcaseData,
+                                       String JiraTestId, String
+                                               JiraTestData) throws IOException {
+        try (FileInputStream outputExcelFileInputStream = new FileInputStream(fileName)) {
             Workbook workbook = new XSSFWorkbook(outputExcelFileInputStream);
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
             Row newRow = sheet.createRow(++lastRowNum);
             newRow.createCell(0).setCellValue(qpackTestcaseId);
-            newRow.createCell(1).setCellValue(qpackTestcaseLink);
+            newRow.createCell(1).setCellValue(qpackTestcaseData);
             newRow.createCell(2).setCellValue(JiraTestId);
-            newRow.createCell(3).setCellValue(JiraTestLink);
+            newRow.createCell(3).setCellValue(JiraTestData);
 
             logger.debug(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
-                    qpackTestcaseLink, JiraTestId, JiraTestLink));
-            writeWorkbookToFile(workbook, outputFileName);
+                    qpackTestcaseData, JiraTestId, JiraTestData));
+            writeWorkbookToFile(workbook, fileName);
         } catch (IOException e) {
             logger.error("Failed to open file", e);
             throw e;
         }
     }
 
-    public void createFailedTcListFileIfNeeded(List<String> failedTcIds) throws IOException {
-        File outputFile = new File(failedTcListFileName);
+    public void createFailedTcListFileIfNeeded(List<String> failedTcIds, String fileName) throws IOException {
+        File outputFile = new File(fileName);
         if (outputFile.createNewFile()) {
-            logger.info(String.format("Creating new output file: %s", failedTcListFileName));
+            logger.info(String.format("Creating new output file: %s", fileName));
             Workbook workbook = new XSSFWorkbook();
             Sheet sheet = workbook.createSheet("Failed TC List");
             Row row = sheet.createRow(0);
             row.createCell(0).setCellValue("Key:");
-            writeWorkbookToFile(workbook, failedTcListFileName);
+            writeWorkbookToFile(workbook, fileName);
         } else {
             logger.info("Failed TC list file already exists, data will be appended");
         }
 
-        try (FileInputStream outputExcelFileInputStream = new FileInputStream(failedTcListFileName)) {
+        try (FileInputStream outputExcelFileInputStream = new FileInputStream(fileName)) {
             Workbook workbook = new XSSFWorkbook(outputExcelFileInputStream);
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
@@ -104,7 +111,7 @@ public class ExcelFileHandler {
             }
 
             logger.debug("Writing failed TC list to file");
-            writeWorkbookToFile(workbook, failedTcListFileName);
+            writeWorkbookToFile(workbook, fileName);
         } catch (IOException e) {
             logger.error("Failed to open file", e);
             throw e;
@@ -136,20 +143,20 @@ public class ExcelFileHandler {
 
     }
 
-    private void createOutputFileIfNeeded() throws IOException {
-        File outputFile = new File(outputFileName);
+    private void createOutputFileIfNeeded(String fileName, String sheetName, String[] columnHeaders) throws IOException {
+        File outputFile = new File(fileName);
         if (outputFile.createNewFile()) {
-            logger.info(String.format("Creating new output file: %s", outputFileName));
+            logger.info(String.format("Creating new output file: %s", fileName));
             Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Migration Table");
+            Sheet sheet = workbook.createSheet(sheetName);
             Row row = sheet.createRow(0);
-            row.createCell(0).setCellValue(outputFileColumns[0]);
-            row.createCell(1).setCellValue(outputFileColumns[1]);
-            row.createCell(2).setCellValue(outputFileColumns[2]);
-            row.createCell(3).setCellValue(outputFileColumns[3]);
-            writeWorkbookToFile(workbook, outputFileName);
+            row.createCell(0).setCellValue(columnHeaders[0]);
+            row.createCell(1).setCellValue(columnHeaders[1]);
+            row.createCell(2).setCellValue(columnHeaders[2]);
+            row.createCell(3).setCellValue(columnHeaders[3]);
+            writeWorkbookToFile(workbook, fileName);
         } else {
-            logger.info("Output file already exists, data will be appended");
+            logger.info(String.format("Output file (\"%s\") already exists, data will be appended", fileName));
         }
     }
 
