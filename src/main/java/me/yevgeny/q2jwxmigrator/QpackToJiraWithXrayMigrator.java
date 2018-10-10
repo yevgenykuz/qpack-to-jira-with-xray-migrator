@@ -374,6 +374,8 @@ public class QpackToJiraWithXrayMigrator {
 
             if (!qpackObjectPath.toString().equals(jiraObjectPath)) {
                 pathErrors++;
+                logger.error(String.format("\"Path\" field error found for Jira test key: %s",
+                        qpackTestCaseToJiraTestMapping.get(i).getValue()));
                 pathErrorsDetails.add(String.format("QPACK Test Case ID: %s\nPath: %s\nJIRA Test Key: %s\nPath: %s",
                         qpackTestCaseToJiraTestMapping.get(i).getKey(), qpackObjectPath.toString(),
                         qpackTestCaseToJiraTestMapping.get(i).getValue(), jiraObjectPath));
