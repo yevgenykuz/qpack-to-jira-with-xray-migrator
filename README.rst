@@ -65,7 +65,7 @@ Meta
 Authors
 -------
 
-`yevegnykuz <https://github.com/yevegnykuz>`_
+`yevgenykuz <https://github.com/yevgenykuz>`_
 
 License
 -------
