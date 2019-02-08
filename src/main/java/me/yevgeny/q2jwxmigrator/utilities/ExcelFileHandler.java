@@ -1,6 +1,7 @@
 package me.yevgeny.q2jwxmigrator.utilities;
 
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -23,10 +24,10 @@ public class ExcelFileHandler {
     public static final String validationOutputFileName = "Migration_Validation_Errors.xlsx";
     public static final String validationFailedTestListFileName = "Failed_To_Validate_Tests_List.xlsx";
     private static final Logger logger = Logger.getLogger(ExcelFileHandler.class.getSimpleName());
-    private static final String outputFileColumns[] = {"QPACK TC ID", "QPACK TC Link", "JIRA Test ID", "JIRA Test " +
-            "link"};
-    private static final String validationOutputFileColumns[] = {"QPACK TC ID", "QPACK Path", "JIRA Test ID", "JIRA " +
-            "Path"};
+    private static final String[] outputFileColumns =
+            {"QPACK TC ID", "QPACK TC Link", "JIRA Test ID", "JIRA Test " + "link"};
+    private static final String[] validationOutputFileColumns =
+            {"QPACK TC ID", "QPACK Path", "JIRA Test ID", "JIRA " + "Path"};
     private static ExcelFileHandler ourInstance;
     private static String tcListFile;
 
@@ -66,8 +67,7 @@ public class ExcelFileHandler {
     }
 
     public void appendLineToOutputFile(String fileName, String qpackTestcaseId, String qpackTestcaseData,
-                                       String JiraTestId, String
-                                               JiraTestData) throws IOException {
+            String JiraTestId, String JiraTestData) throws IOException {
         try (FileInputStream outputExcelFileInputStream = new FileInputStream(fileName)) {
             Workbook workbook = new XSSFWorkbook(outputExcelFileInputStream);
             Sheet sheet = workbook.getSheetAt(0);
@@ -78,8 +78,8 @@ public class ExcelFileHandler {
             newRow.createCell(2).setCellValue(JiraTestId);
             newRow.createCell(3).setCellValue(JiraTestData);
 
-            logger.debug(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId,
-                    qpackTestcaseData, JiraTestId, JiraTestData));
+            logger.debug(String.format("Appending to output file: [%s, %s, %s, %s]", qpackTestcaseId, qpackTestcaseData,
+                    JiraTestId, JiraTestData));
             writeWorkbookToFile(workbook, fileName);
         } catch (IOException e) {
             logger.error("Failed to open file", e);
@@ -130,7 +130,8 @@ public class ExcelFileHandler {
 
             while (rowIterator.hasNext()) {
                 Row currentRow = rowIterator.next();
-                Pair<Integer, String> pair = new Pair<>(Integer.valueOf(currentRow.getCell(0).getStringCellValue()),
+                Pair<Integer, String> pair = new ImmutablePair<>(
+                        Integer.valueOf(currentRow.getCell(0).getStringCellValue()),
                         currentRow.getCell(2).getStringCellValue());
                 mapping.add(pair);
             }
@@ -143,7 +144,8 @@ public class ExcelFileHandler {
 
     }
 
-    private void createOutputFileIfNeeded(String fileName, String sheetName, String[] columnHeaders) throws IOException {
+    private void createOutputFileIfNeeded(String fileName, String sheetName, String[] columnHeaders)
+            throws IOException {
         File outputFile = new File(fileName);
         if (outputFile.createNewFile()) {
             logger.info(String.format("Creating new output file: %s", fileName));

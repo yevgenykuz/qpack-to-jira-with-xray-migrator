@@ -1,7 +1,6 @@
 package me.yevgeny.q2jwxmigrator;
 
 import com.atlassian.renderer.wysiwyg.converter.DefaultWysiwygConverter;
-import javafx.util.Pair;
 import me.yevgeny.q2jwxmigrator.model.jirafield.JiraField;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.Step;
 import me.yevgeny.q2jwxmigrator.model.jiraxrayteststeplist.XrayTestStepList;
@@ -19,8 +18,8 @@ import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClient;
 import me.yevgeny.q2jwxmigrator.wsclient.qpack.QpackSoapClientException;
 import net.rcarz.jiraclient.Field;
 import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -59,10 +58,9 @@ public class QpackToJiraWithXrayMigrator {
     private static List<String> failedTests = new ArrayList<>();
 
 
-    public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException,
-            JiraException {
+    public static void main(String[] args) throws QpackSoapClientException, JiraRestClientException, IOException {
         init();
-        // migrate();
+        migrate();
         validateMigration();
     }
 
@@ -78,7 +76,7 @@ public class QpackToJiraWithXrayMigrator {
         jiraUrl = configurationManagerInstance.getConfigurationValue("jiraUrl");
     }
 
-    private static void migrate() throws IOException, QpackSoapClientException, JiraRestClientException {
+    private static void migrate() throws IOException {
         logger.info("Starting migration ...");
 
         List<Integer> testCaseIds = excelFileHandlerInstance.getTcListFromInputFile();
@@ -102,8 +100,8 @@ public class QpackToJiraWithXrayMigrator {
                 printStatus(i, totalTestCases);
             }
             Thread.sleep(oneSecond);
-            logger.info(String.format("Migration complete. Check %s for migration table", ExcelFileHandler
-                    .outputFileName));
+            logger.info(
+                    String.format("Migration complete. Check %s for migration table", ExcelFileHandler.outputFileName));
         } catch (InterruptedException e) {
             logger.error("Migration interrupted !", e);
         } finally {
@@ -138,8 +136,9 @@ public class QpackToJiraWithXrayMigrator {
         for (int i = 1; i < objectPathElements.length; i++) {
             String pathElementName;
             try {
-                pathElementName = String.format("\\%s", qpackSoapClientInstance.getQpackObject(Integer.parseInt
-                        (objectPathElements[i])).getFieldValue(QpackFieldKey.NAME.value()));
+                pathElementName = String.format("\\%s",
+                        qpackSoapClientInstance.getQpackObject(Integer.parseInt(objectPathElements[i]))
+                                .getFieldValue(QpackFieldKey.NAME.value()));
             } catch (QpackSoapClientException qex) {
                 logger.error("Failed to contact QPACK", qex);
                 testCaseConversionFailed(testCaseId.toString());
@@ -147,12 +146,7 @@ public class QpackToJiraWithXrayMigrator {
             }
 
             if (pathElementName.contains("SR")) {
-                String re1 = ".*?";    // Non-greedy match on filler
-                String re2 = "(SR)";    // "SR"
-                String re3 = ".*?";    // Non-greedy match on filler
-                String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number that matches WX.YZ format
-                Pattern p = Pattern.compile(re1 + re2 + re3 + re4, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-                Matcher m = p.matcher(pathElementName);
+                Matcher m = createActualVersionRegexMatcher(pathElementName);
                 if (m.find()) {
                     if (actualVersion.isEmpty()) {
                         actualVersion = m.group(1) + m.group(2);
@@ -200,8 +194,8 @@ public class QpackToJiraWithXrayMigrator {
         }
 
         // add link to QPACK TC
-        qpackObject.addFieldToObjectFields(JiraFieldKey.QPACK_LINK.value(), String.format(qpackTestcaseUrlPattern,
-                qpackUrl, testCaseId));
+        qpackObject.addFieldToObjectFields(JiraFieldKey.QPACK_LINK.value(),
+                String.format(qpackTestcaseUrlPattern, qpackUrl, testCaseId));
 
         // convert description to jira markup
         List<String> imagesToUpload = new ArrayList<>();
@@ -305,6 +299,15 @@ public class QpackToJiraWithXrayMigrator {
         logger.debug(String.format("QPACK TC-%s was converted to JIRA issue: ", testCaseId));
     }
 
+    private static Matcher createActualVersionRegexMatcher(String pathElementName) {
+        String re1 = ".*?";    // Non-greedy match on filler
+        String re2 = "(SR)";    // "SR"
+        String re3 = ".*?";    // Non-greedy match on filler
+        String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number that matches WX.YZ format
+        Pattern p = Pattern.compile(re1 + re2 + re3 + re4, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        return p.matcher(pathElementName);
+    }
+
     private static void validateFields(QpackObject qpackObject) throws InterruptedException {
         jiraRestClientInstance.validateFields(qpackObject.getFields());
         Thread.sleep(oneSecond);
@@ -316,8 +319,8 @@ public class QpackToJiraWithXrayMigrator {
 
     private static void printStatus(int currentIndex, int totalTestCases) {
         if (currentIndex % statusInterval == 0) {
-            logger.info(String.format("[%s%%] %s test cases analyzed", currentIndex * 100 / totalTestCases,
-                    currentIndex));
+            logger.info(
+                    String.format("[%s%%] %s test cases analyzed", currentIndex * 100 / totalTestCases, currentIndex));
         }
     }
 
@@ -380,18 +383,17 @@ public class QpackToJiraWithXrayMigrator {
                         ExcelFileHandler.validationFailedTestListFileName);
             }
         }
-        logger.info(String.format("Migration validation complete. Check %s for details", ExcelFileHandler
-                .validationOutputFileName));
+        logger.info(String.format("Migration validation complete. Check %s for details",
+                ExcelFileHandler.validationOutputFileName));
     }
 
     private static void validateTestCase(Pair<Integer, String> testCaseToTestMappingPair, String pathFieldId) {
         Integer testCaseID = testCaseToTestMappingPair.getKey();
         try {
             StringBuilder qpackObjectPath = new StringBuilder();
-            QpackGuiObject qpackGuiObject =
-                    qpackSoapClientInstance.getQpackGuiObject(testCaseID);
-            List<QpackGuiObject.Section.Path.Item> objectPathItems =
-                    qpackGuiObject.getSection().get(0).getPath().getItem();
+            QpackGuiObject qpackGuiObject = qpackSoapClientInstance.getQpackGuiObject(testCaseID);
+            List<QpackGuiObject.Section.Path.Item> objectPathItems = qpackGuiObject.getSection().get(0).getPath()
+                    .getItem();
             for (QpackGuiObject.Section.Path.Item objectPathItem : objectPathItems) {
                 qpackObjectPath.append(String.format("\\%s", objectPathItem.getObjName()));
             }
@@ -411,13 +413,7 @@ public class QpackToJiraWithXrayMigrator {
                     String updatedVersion = "";
                     for (String pathElementName : qpackObjectPath.toString().split("\\\\")) {
                         if (pathElementName.contains("SR")) {
-                            String re1 = ".*?";    // Non-greedy match on filler
-                            String re2 = "(SR)";    // "SR"
-                            String re3 = ".*?";    // Non-greedy match on filler
-                            String re4 = "([+-]?\\d*\\.\\d+)(?![-+0-9\\.])";    // any number in WX.YZ format
-                            Pattern p = Pattern.compile(re1 + re2 + re3 + re4,
-                                    Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-                            Matcher m = p.matcher(pathElementName);
+                            Matcher m = createActualVersionRegexMatcher(pathElementName);
                             if (m.find()) {
                                 if (updatedVersion.isEmpty()) {
                                     updatedVersion = m.group(1) + m.group(2);
@@ -446,7 +442,6 @@ public class QpackToJiraWithXrayMigrator {
             }
         } catch (Exception e) {
             testValidationFailed(testCaseID.toString(), e);
-            return;
         }
     }
 }

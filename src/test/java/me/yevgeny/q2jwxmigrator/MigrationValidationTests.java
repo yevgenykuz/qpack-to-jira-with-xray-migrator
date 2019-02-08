@@ -1,7 +1,7 @@
 package me.yevgeny.q2jwxmigrator;
 
-import javafx.util.Pair;
 import me.yevgeny.q2jwxmigrator.utilities.ExcelFileHandler;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
