@@ -70,7 +70,7 @@ Authors
 License
 -------
 
-BSD-3-Clause - `LICENSE <https://github.com/yevgenykuz//qpack-to-jira-with-xray-migrator/blob/master/LICENSE>`_
+`MIT License <https://github.com/yevgenykuz//qpack-to-jira-with-xray-migrator/blob/master/LICENSE>`_
 
 
 -----
