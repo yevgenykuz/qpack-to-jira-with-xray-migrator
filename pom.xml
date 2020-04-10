@@ -61,7 +61,7 @@
         <dependency>
             <groupId>com.atlassian.renderer</groupId>
             <artifactId>atlassian-renderer</artifactId>
-            <version>8.0.5</version>
+            <version>8.0.30</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
