@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>me.yevgeny.q2jwxmigrator</groupId>
+    <groupId>com.yevgenyk.q2jwxmigrator</groupId>
     <artifactId>qpack-to-jira-with-xray-migrator</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -14,7 +14,7 @@
     <developers>
         <developer>
             <name>Yevgeny Kuznetsov</name>
-            <url>https://github.com/yevgenykuz</url>
+            <url>https://yevgenyk.com</url>
         </developer>
     </developers>
 
@@ -23,7 +23,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.testSource>1.8</maven.compiler.testSource>
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-        <mainClass>me.yevgeny.q2jwxmigrator.QpackToJiraWithXrayMigrator</mainClass>
+        <mainClass>com.yevgenyk.q2jwxmigrator.QpackToJiraWithXrayMigrator</mainClass>
     </properties>
 
     <build>
